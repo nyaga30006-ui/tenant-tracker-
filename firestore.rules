@@ -1,0 +1,176 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function activeUser() {
+      return hasProfile() && profile().disabled == false;
+    }
+
+    function admin() {
+      return activeUser() && profile().role == 'admin';
+    }
+
+    function assignedTo(propertyId) {
+      return admin() || (activeUser() && propertyId in profile().assignedPropertyIds);
+    }
+
+    function caretaker() {
+      return activeUser() && profile().role == 'caretaker';
+    }
+
+    function fullLandlord() {
+      return activeUser()
+        && profile().role == 'landlord'
+        && profile().landlordAccess == 'full';
+    }
+
+    function canOperate(propertyId) {
+      return assignedTo(propertyId) && (admin() || caretaker() || fullLandlord());
+    }
+
+    function canManageRooms(propertyId) {
+      return assignedTo(propertyId) && (admin() || fullLandlord());
+    }
+
+    function validPayment(propertyId, paymentId) {
+      return request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.roomId is string
+        && request.resource.data.tenant is string
+        && request.resource.data.receivedAt is string
+        && request.resource.data.status in ['pending', 'confirmed', 'failed']
+        && request.resource.data.method in ['cash', 'mpesa', 'bank']
+        && (request.resource.data.method == 'cash'
+          || (request.resource.data.reference is string
+            && request.resource.data.reference.size() > 0
+            && request.resource.data.referenceKey is string
+            && request.resource.data.referenceKey.size() > 0
+            && getAfter(/databases/$(database)/documents/properties/$(propertyId)/paymentReferences/$(request.resource.data.referenceKey)).data.paymentId == paymentId));
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || admin());
+      allow list: if admin();
+      allow create, delete: if admin();
+      allow update: if admin()
+        || (activeUser()
+          && request.auth.uid == userId
+          && resource.data.role == 'landlord'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['landlordAccessRequest', 'updatedAt'])
+          && (!('landlordAccessRequest' in request.resource.data)
+            || request.resource.data.landlordAccessRequest in ['view', 'full']));
+    }
+
+    match /properties/{propertyId} {
+      allow get: if assignedTo(propertyId);
+      allow list, create, update, delete: if admin();
+
+      match /rooms/{roomId} {
+        allow read: if assignedTo(propertyId);
+        allow create, delete: if canManageRooms(propertyId);
+        allow update: if canManageRooms(propertyId)
+          || (assignedTo(propertyId)
+            && caretaker()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'paid', 'arrears', 'credit', 'status', 'depositPaid', 'updatedAt'
+            ]));
+      }
+
+      match /payments/{paymentId} {
+        allow read: if assignedTo(propertyId);
+        allow create: if canOperate(propertyId) && validPayment(propertyId, paymentId);
+        allow update: if assignedTo(propertyId) && (admin() || fullLandlord()) && validPayment(propertyId, paymentId);
+        allow delete: if false;
+      }
+
+      match /paymentReferences/{referenceId} {
+        allow read: if assignedTo(propertyId);
+        allow create: if canOperate(propertyId)
+          && request.resource.data.paymentId is string
+          && request.resource.data.reference is string
+          && getAfter(/databases/$(database)/documents/properties/$(propertyId)/payments/$(request.resource.data.paymentId)).data.referenceKey == referenceId
+          && getAfter(/databases/$(database)/documents/properties/$(propertyId)/payments/$(request.resource.data.paymentId)).data.reference == request.resource.data.reference;
+        allow update, delete: if false;
+      }
+
+      match /tenantResidencies/{residencyId} {
+        allow read: if assignedTo(propertyId);
+        allow create: if canManageRooms(propertyId);
+        allow update: if canManageRooms(propertyId)
+          || (assignedTo(propertyId)
+            && caretaker()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['depositHeld', 'updatedAt']));
+        allow delete: if false;
+      }
+
+      match /maintenance/{issueId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if canOperate(propertyId);
+        allow delete: if admin();
+      }
+
+      match /electricityBills/{billId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if canOperate(propertyId);
+        allow delete: if admin();
+      }
+
+      match /billingResets/{resetId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if assignedTo(propertyId) && (admin() || fullLandlord());
+        allow delete: if false;
+      }
+
+      match /waterMeters/{meterId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if canOperate(propertyId);
+        allow delete: if admin();
+      }
+
+      match /waterMeterReadings/{readingId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if canOperate(propertyId);
+        allow delete: if false;
+      }
+
+      match /waterPurchaseBills/{billId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if canOperate(propertyId);
+        allow delete: if admin();
+      }
+
+      match /waterSales/{saleId} {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if canOperate(propertyId);
+        allow delete: if admin();
+      }
+
+      match /settings/water {
+        allow read: if assignedTo(propertyId);
+        allow create, update: if assignedTo(propertyId) && (admin() || fullLandlord());
+        allow delete: if false;
+      }
+
+      match /notificationState/{userId} {
+        allow read, create, update: if assignedTo(propertyId) && request.auth.uid == userId;
+        allow delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

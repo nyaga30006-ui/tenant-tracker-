@@ -1,0 +1,41 @@
+{
+  "name": "myproperty-rebuild",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:firebase": "vite --mode firebase-emulator",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "firebase:emulators": "node scripts/firebase-cli.mjs emulators:start --project demo-myproperty --only auth,firestore,functions,pubsub",
+    "firebase:seed": "npm --prefix functions run seed:emulator",
+    "firebase:test": "node scripts/firebase-cli.mjs emulators:exec --project demo-myproperty --only auth,firestore \"npm run firebase:test:inside\"",
+    "firebase:test:inside": "npm run firebase:test:rules && npm --prefix functions run test:emulator",
+    "firebase:test:rules": "vitest run --config vitest.firebase.config.ts"
+  },
+  "dependencies": {
+    "firebase": "^12.17.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^1.33.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.5",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "firebase-tools": "^15.28.1",
+    "jsdom": "^30.0.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.2",
+    "vitest": "^4.1.11"
+  }
+}
