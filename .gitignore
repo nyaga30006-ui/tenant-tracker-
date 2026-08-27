@@ -5,6 +5,7 @@ dist/
 output/
 .env
 .env.local
+migration-private/
 .firebase/
 *.log
 .DS_Store
