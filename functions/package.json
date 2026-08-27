@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc",
     "migration:import:emulator": "npm run build && node lib/migration/importV2BundleToEmulator.js",
+    "migration:preview-auth": "node scripts/create-migration-preview-auth.mjs",
     "migration:transform": "npm run build && node lib/migration/transformV1ExportCli.js",
     "test": "npm run build && node --test lib/monthlyReset.test.js lib/migration/importV2BundleToEmulator.test.js lib/migration/v1Transform.test.js",
     "test:migration:emulator": "npm run build && node --test lib/migration/importV2BundleToEmulator.integration.test.js",
