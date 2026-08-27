@@ -16,6 +16,7 @@ export interface MoveOutTenantDraft {
 }
 
 interface MoveOutTenantDialogProps {
+  canSettleDeposit?: boolean;
   onClose: () => void;
   onSaved: (draft: MoveOutTenantDraft) => void;
   residency?: TenantResidency;
@@ -26,7 +27,7 @@ function todayInNairobi() {
   return new Intl.DateTimeFormat("en-CA", { day: "2-digit", month: "2-digit", timeZone: "Africa/Nairobi", year: "numeric" }).format(new Date());
 }
 
-export function MoveOutTenantDialog({ onClose, onSaved, residency, room }: MoveOutTenantDialogProps) {
+export function MoveOutTenantDialog({ canSettleDeposit = true, onClose, onSaved, residency, room }: MoveOutTenantDialogProps) {
   const depositHeld = room.depositPaid ?? residency?.depositHeld ?? 0;
   const accountBalance = roomRecurringBalance(room);
   const maximumBalanceApplication = Math.min(depositHeld, Math.max(0, accountBalance));
@@ -55,11 +56,11 @@ export function MoveOutTenantDialog({ onClose, onSaved, residency, room }: MoveO
       return;
     }
     onSaved({
-      deductionNote: deductionNote.trim(),
-      depositAppliedToBalance: applied,
-      depositDeducted: totalDeducted,
-      depositRefunded,
-      finalBalance,
+      deductionNote: canSettleDeposit ? deductionNote.trim() : "",
+      depositAppliedToBalance: canSettleDeposit ? applied : 0,
+      depositDeducted: canSettleDeposit ? totalDeducted : 0,
+      depositRefunded: canSettleDeposit ? depositRefunded : 0,
+      finalBalance: canSettleDeposit ? finalBalance : accountBalance,
       moveOutDate,
       moveOutNote: moveOutNote.trim(),
     });
@@ -74,7 +75,7 @@ export function MoveOutTenantDialog({ onClose, onSaved, residency, room }: MoveO
           <div><small>Deposit held</small><strong>{formatKes(depositHeld)}</strong></div>
         </section>
         <label className="field">Move-out date<input max={todayInNairobi()} min={residency?.moveInDate} onChange={(event) => { setMoveOutDate(event.target.value); setError(""); }} required type="date" value={moveOutDate} /></label>
-        <label className="field">Deposit used for rent balance<input inputMode="numeric" max={maximumBalanceApplication} min="0" onChange={(event) => setDepositAppliedToBalance(event.target.value)} placeholder="0" type="number" value={depositAppliedToBalance} /><small className="field-help">Maximum available for the current rent balance: {formatKes(maximumBalanceApplication)}.</small></label>
+        {canSettleDeposit ? <><label className="field">Deposit used for rent balance<input inputMode="numeric" max={maximumBalanceApplication} min="0" onChange={(event) => setDepositAppliedToBalance(event.target.value)} placeholder="0" type="number" value={depositAppliedToBalance} /><small className="field-help">Maximum available for the current rent balance: {formatKes(maximumBalanceApplication)}.</small></label>
         <label className="field field--wide">Other deposit deductions<input inputMode="numeric" max={Math.max(0, depositHeld - applied)} min="0" onChange={(event) => setOtherDeduction(event.target.value)} placeholder="Damages, cleaning or lost keys" type="number" value={otherDeduction} /></label>
         {totalDeducted > 0 && <label className="field field--wide">Deduction explanation<textarea autoFocus onChange={(event) => setDeductionNote(event.target.value)} placeholder="Explain every deduction from the tenant’s deposit" required rows={3} value={deductionNote} /></label>}
         <section className="deposit-settlement info-box field--wide" aria-live="polite">
@@ -82,12 +83,12 @@ export function MoveOutTenantDialog({ onClose, onSaved, residency, room }: MoveO
           <div><small>Total deductions</small><strong>{formatKes(totalDeducted)}</strong></div><b>=</b>
           <div><small>Refund to tenant</small><strong>{formatKes(depositRefunded)}</strong></div>
           <p>Final rent position: <strong className={finalBalance > 0 ? "balance-text--arrears" : finalBalance < 0 ? "balance-text--credit" : "balance-text--cleared"}>{finalBalance > 0 ? `${formatKes(finalBalance)} still due` : finalBalance < 0 ? `${formatKes(finalBalance)} credit` : "Cleared"}</strong></p>
-        </section>
-        {invalidDeduction && <p className="form-error warning-box field--wide">The deductions cannot exceed the deposit held, and the rent allocation cannot exceed the outstanding rent balance.</p>}
+        </section></> : <p className="warning-box field--wide">The tenant will be moved out, but the deposit will remain pending for administrator review. No refund or deduction will be recorded by this account.</p>}
+        {canSettleDeposit && invalidDeduction && <p className="form-error warning-box field--wide">The deductions cannot exceed the deposit held, and the rent allocation cannot exceed the outstanding rent balance.</p>}
         {error && <p className="form-error warning-box field--wide" role="alert">{error}</p>}
         <label className="field field--wide">Move-out note (optional)<textarea onChange={(event) => setMoveOutNote(event.target.value)} placeholder="Inspection result, keys returned, forwarding details, or follow-up required" rows={3} value={moveOutNote} /></label>
         <p className="residency-warning warning-box field--wide">After confirmation, old payments will be marked as former residency and the room will be cleared for the next tenant. The history will not be deleted.</p>
-        <footer className="modal-actions"><button className="button button--secondary btn btn-ghost" onClick={onClose} type="button">Cancel</button><button className="button button--danger btn btn-danger" disabled={invalidDeduction} type="submit">Confirm move-out</button></footer>
+        <footer className="modal-actions"><button className="button button--secondary btn btn-ghost" onClick={onClose} type="button">Cancel</button><button className="button button--danger btn btn-danger" disabled={canSettleDeposit && invalidDeduction} type="submit">Confirm move-out</button></footer>
       </form>
     </Modal>
   );

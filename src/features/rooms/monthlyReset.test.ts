@@ -14,9 +14,13 @@ describe("monthly resets", () => {
     expect(resetRoomForMonth(reset, "2026-08")).toEqual(reset);
   });
 
+  it("does not add the one-time electricity fee during a monthly reset", () => {
+    const reset = resetRoomForMonth(roomFixture({ electricityDueEnabled: true, electricityFee: 2500, electricityPaid: 0, paid: 7500 }), "2026-08");
+    expect(reset).toMatchObject({ arrears: 0, electricityPaid: 0, paid: 0 });
+  });
+
   it("excludes vacant and already-reset rooms", () => {
     const rooms = [roomFixture(), roomFixture({ id: "vacant", tenant: "" }), roomFixture({ id: "done", lastResetMonth: "2026-08" })];
     expect(roomsReadyForReset(rooms, "2026-08").map((room) => room.id)).toEqual(["room-1"]);
   });
 });
-

@@ -12,6 +12,7 @@ export interface AccessPermissions {
   canCorrectPayments: boolean;
   canManageElectricity: boolean;
   canManageMaintenance: boolean;
+  canManageResidencies: boolean;
   canManageRooms: boolean;
   canManageUsers: boolean;
   canManageWater: boolean;
@@ -45,13 +46,13 @@ const fallbackAdmin: AppUser = {
 
 export function permissionsFor(user: AppUser): AccessPermissions {
   if (user.role === "admin") {
-    return { canAddProperties: true, canConfigureWater: true, canCorrectPayments: true, canManageElectricity: true, canManageMaintenance: true, canManageRooms: true, canManageUsers: true, canManageWater: true, canRecordPayments: true, canResetMonths: true, canSetBooks: true, canViewDashboard: true, isReadOnly: false };
+    return { canAddProperties: true, canConfigureWater: true, canCorrectPayments: true, canManageElectricity: true, canManageMaintenance: true, canManageResidencies: true, canManageRooms: true, canManageUsers: true, canManageWater: true, canRecordPayments: true, canResetMonths: true, canSetBooks: true, canViewDashboard: true, isReadOnly: false };
   }
   if (user.role === "caretaker") {
-    return { canAddProperties: false, canConfigureWater: false, canCorrectPayments: false, canManageElectricity: true, canManageMaintenance: true, canManageRooms: false, canManageUsers: false, canManageWater: true, canRecordPayments: true, canResetMonths: false, canSetBooks: false, canViewDashboard: false, isReadOnly: false };
+    return { canAddProperties: false, canConfigureWater: false, canCorrectPayments: false, canManageElectricity: true, canManageMaintenance: true, canManageResidencies: true, canManageRooms: false, canManageUsers: false, canManageWater: true, canRecordPayments: true, canResetMonths: false, canSetBooks: false, canViewDashboard: false, isReadOnly: false };
   }
   const hasFullAccess = user.landlordAccess === "full";
-  return { canAddProperties: false, canConfigureWater: hasFullAccess, canCorrectPayments: hasFullAccess, canManageElectricity: hasFullAccess, canManageMaintenance: hasFullAccess, canManageRooms: hasFullAccess, canManageUsers: false, canManageWater: hasFullAccess, canRecordPayments: hasFullAccess, canResetMonths: hasFullAccess, canSetBooks: false, canViewDashboard: true, isReadOnly: !hasFullAccess };
+  return { canAddProperties: false, canConfigureWater: hasFullAccess, canCorrectPayments: hasFullAccess, canManageElectricity: hasFullAccess, canManageMaintenance: hasFullAccess, canManageResidencies: hasFullAccess, canManageRooms: hasFullAccess, canManageUsers: false, canManageWater: hasFullAccess, canRecordPayments: hasFullAccess, canResetMonths: hasFullAccess, canSetBooks: false, canViewDashboard: true, isReadOnly: !hasFullAccess };
 }
 
 function pageAllowed(user: AppUser, permissions: AccessPermissions, page: PageId): boolean {

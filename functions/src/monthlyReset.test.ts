@@ -17,3 +17,7 @@ test("scheduled reset skips vacant rooms", () => {
   assert.equal(calculateMonthlyReset({ rent: 7_500, tenant: "" }, "2026-08"), null);
 });
 
+test("scheduled reset never adds the one-time electricity fee", () => {
+  const result = calculateMonthlyReset({ electricityDueEnabled: true, electricityFee: 2_500, paid: 7_500, rent: 7_500, tenant: "Tenant" }, "2026-08");
+  assert.deepEqual(result, { arrearsCarried: 0, patch: { arrears: 0, credit: 0, lastResetMonth: "2026-08", paid: 0, status: "unpaid" } });
+});

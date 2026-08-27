@@ -44,6 +44,7 @@ export interface Room {
   depositRequired?: number;
   depositDueEnabled?: boolean;
   electricityFee?: number;
+  electricityPaid?: number;
   electricityDueEnabled?: boolean;
   lastResetMonth?: string;
   bookSetAt?: string;
@@ -83,6 +84,7 @@ export interface TenantResidency {
   depositDeducted?: number;
   depositHeld: number;
   depositRefunded?: number;
+  depositSettlementStatus?: "pending" | "settled";
   finalBalance?: number;
   id: string;
   moveInDate: string;

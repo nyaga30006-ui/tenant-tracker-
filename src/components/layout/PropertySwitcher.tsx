@@ -20,7 +20,7 @@ export function PropertySwitcher({ isOpen, onAddProperty, onToggle }: PropertySw
   return (
     <div className="premium-property-switcher">
       <button aria-expanded={isOpen} aria-haspopup="listbox" className="premium-property-picker filter-sel" onClick={onToggle} type="button">
-        <span aria-hidden="true" className="bicon">🏢</span>
+        <span className="bicon"><Icon name="building" size={18} /></span>
         <span className="premium-property-picker__copy"><small>Current property</small><strong>{selectedProperty.name}</strong></span>
         <Icon name="arrow" size={15} />
       </button>
@@ -30,7 +30,7 @@ export function PropertySwitcher({ isOpen, onAddProperty, onToggle }: PropertySw
           <div className="premium-property-list" role="listbox">
             {properties.map((property) => (
               <button aria-selected={selectedProperty.id === property.id} className={`premium-property-option${selectedProperty.id === property.id ? " is-selected" : ""}`} key={property.id} onClick={() => chooseProperty(property.id)} role="option" type="button">
-                <span aria-hidden="true" className="bicon">🏢</span>
+                <span className="bicon"><Icon name="building" size={18} /></span>
                 <span className="premium-property-option__copy"><strong>{property.name}</strong><small>{property.city} · {property.units} units</small></span>
                 {selectedProperty.id === property.id && <Icon name="check" size={17} />}
               </button>

@@ -108,6 +108,26 @@ function ensureResidencyLinks(rooms: Room[], payments: Payment[], existingReside
   return { payments: linkedPayments, rooms: linkedRooms, tenantResidencies };
 }
 
+function migrateOneTimeElectricityLedger(rooms: Room[], payments: Payment[]): Room[] {
+  return rooms.map((room) => {
+    if (room.electricityPaid !== undefined) return room;
+    const electricityPaid = payments
+      .filter((payment) => payment.roomId === room.id
+        && payment.paymentType === "electricity"
+        && payment.status === "confirmed"
+        && (payment.residency ?? "current") === "current"
+        && (!payment.residencyId || payment.residencyId === room.activeResidencyId))
+      .reduce((total, payment) => total + payment.amount, 0);
+    return {
+      ...room,
+      electricityDueEnabled: room.electricityDueEnabled === true || electricityPaid > 0,
+      electricityFee: room.electricityFee ?? 2500,
+      electricityPaid,
+      paid: Math.max(0, room.paid - electricityPaid),
+    };
+  });
+}
+
 function defaultDatabase(): LocalDatabase {
   const linked = ensureResidencyLinks(demoRooms.map((room) => ({ ...room })), demoPayments.map((payment) => ({ ...payment })), []);
   return {
@@ -118,7 +138,7 @@ function defaultDatabase(): LocalDatabase {
         initialized: true,
         maintenanceIssues: demoMaintenance.map((issue) => ({ ...issue })),
         payments: linked.payments,
-        rooms: linked.rooms,
+        rooms: migrateOneTimeElectricityLedger(linked.rooms, linked.payments),
         tenantResidencies: linked.tenantResidencies,
         waterConfiguration: null,
         waterMeterReadings: [],
@@ -143,7 +163,7 @@ function normalisePropertyData(value: unknown): LocalPropertyData {
   const maintenanceIssues = arrayValue<MaintenanceIssue>(value.maintenanceIssues ?? value.maintenance);
   const residencyLinks = ensureResidencyLinks(arrayValue<Room>(value.rooms), arrayValue<Payment>(value.payments), arrayValue<TenantResidency>(value.tenantResidencies));
   const payments = residencyLinks.payments;
-  const rooms = residencyLinks.rooms;
+  const rooms = migrateOneTimeElectricityLedger(residencyLinks.rooms, payments);
   const tenantResidencies = residencyLinks.tenantResidencies;
   const waterMeterReadings = arrayValue<WaterMeterReading>(value.waterMeterReadings);
   const waterMeters = arrayValue<WaterMeter>(value.waterMeters).map(normaliseWaterMeter);

@@ -1,14 +1,12 @@
 import type { Payment, PaymentType, Room, TenantResidency } from "../../types/domain";
 import { calculatedRoomStatus } from "../rooms/roomFinance";
 
-function isDeposit(type: PaymentType | undefined): boolean {
-  return type === "deposit";
-}
-
 export function applyPaymentToRoom(room: Room, paymentType: PaymentType, amount: number): Room {
   const next = paymentType === "deposit"
     ? { ...room, depositPaid: (room.depositPaid ?? 0) + amount }
-    : { ...room, paid: room.paid + amount };
+    : paymentType === "electricity"
+      ? { ...room, electricityPaid: (room.electricityPaid ?? 0) + amount }
+      : { ...room, paid: room.paid + amount };
   return { ...next, status: calculatedRoomStatus(next) };
 }
 
@@ -19,22 +17,25 @@ export function applyPaymentCorrectionToRoom(room: Room, previous: Payment, corr
 
   let paid = room.paid;
   let depositPaid = room.depositPaid ?? 0;
-  if (isDeposit(previous.paymentType)) depositPaid = Math.max(0, depositPaid - previous.amount);
+  let electricityPaid = room.electricityPaid ?? 0;
+  if (previous.paymentType === "deposit") depositPaid = Math.max(0, depositPaid - previous.amount);
+  else if (previous.paymentType === "electricity") electricityPaid = Math.max(0, electricityPaid - previous.amount);
   else paid = Math.max(0, paid - previous.amount);
-  if (isDeposit(corrected.paymentType)) depositPaid += corrected.amount;
+  if (corrected.paymentType === "deposit") depositPaid += corrected.amount;
+  else if (corrected.paymentType === "electricity") electricityPaid += corrected.amount;
   else paid += corrected.amount;
 
-  const next = { ...room, depositPaid, paid };
+  const next = { ...room, depositPaid, electricityPaid, paid };
   return { ...next, status: calculatedRoomStatus(next) };
 }
 
 export function applyPaymentCorrectionToResidency(residency: TenantResidency, previous: Payment, corrected: Payment): TenantResidency {
   const residencyId = corrected.residencyId ?? previous.residencyId;
   if (!residencyId || residency.id !== residencyId) return residency;
-  const previousDeposit = isDeposit(previous.paymentType) ? previous.amount : 0;
-  const nextDeposit = isDeposit(corrected.paymentType) ? corrected.amount : 0;
-  const previousCollection = isDeposit(previous.paymentType) ? 0 : previous.amount;
-  const nextCollection = isDeposit(corrected.paymentType) ? 0 : corrected.amount;
+  const previousDeposit = previous.paymentType === "deposit" ? previous.amount : 0;
+  const nextDeposit = corrected.paymentType === "deposit" ? corrected.amount : 0;
+  const previousCollection = previous.paymentType === "deposit" ? 0 : previous.amount;
+  const nextCollection = corrected.paymentType === "deposit" ? 0 : corrected.amount;
   const collectionDifference = nextCollection - previousCollection;
   return {
     ...residency,
@@ -42,4 +43,3 @@ export function applyPaymentCorrectionToResidency(residency: TenantResidency, pr
     finalBalance: residency.status === "former" ? (residency.finalBalance ?? 0) - collectionDifference : residency.finalBalance,
   };
 }
-

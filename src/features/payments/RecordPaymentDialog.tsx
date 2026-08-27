@@ -2,9 +2,9 @@ import { useState, type FormEvent } from "react";
 import { Modal } from "../../components/ui/Modal";
 import { formatDate, formatKes } from "../../lib/format";
 import { nextPaymentReceipt } from "../../lib/receiptNumbers";
-import { findDuplicatePaymentReference, normalisedReference, validateDate } from "../../lib/validation";
+import { findDuplicatePaymentReference, validateDate } from "../../lib/validation";
 import type { Payment, PaymentMethod, PaymentType, Room, RoomStatus } from "../../types/domain";
-import { calculatedRoomStatus, roomBalance, roomDepositDue, roomRecurringDue } from "../rooms/roomFinance";
+import { calculatedRoomStatus, roomDepositDue, roomElectricityDue, roomRecurringBalance, roomRecurringDue } from "../rooms/roomFinance";
 
 export interface RecordedPaymentDraft {
   amount: number;
@@ -67,8 +67,24 @@ function suggestedAmount(room: Room | undefined, paymentType: PaymentType): stri
   if (!room) return "";
   const balance = paymentType === "deposit"
     ? roomDepositDue(room)
-    : Math.max(0, roomRecurringDue(room) - room.paid);
+    : paymentType === "electricity"
+      ? roomElectricityDue(room)
+      : Math.max(0, roomRecurringDue(room) - room.paid);
   return balance > 0 ? String(balance) : "";
+}
+
+function accountBalance(room: Room, paymentType: PaymentType): number {
+  if (paymentType === "deposit") return roomDepositDue(room);
+  if (paymentType === "electricity") return roomElectricityDue(room);
+  return roomRecurringBalance(room);
+}
+
+function accountStatus(room: Room, paymentType: PaymentType): RoomStatus {
+  if (paymentType === "rent") return calculatedRoomStatus(room);
+  const balance = accountBalance(room, paymentType);
+  if (balance === 0) return "paid";
+  const paid = paymentType === "deposit" ? (room.depositPaid ?? 0) : (room.electricityPaid ?? 0);
+  return paid > 0 ? "partial" : "unpaid";
 }
 
 export function RecordPaymentDialog({ initialRoomId, onClose, onSaved, payments, preferredMethod, recordedBy: initialRecordedBy, receiptPrefix, rooms }: RecordPaymentDialogProps) {
@@ -89,20 +105,21 @@ export function RecordPaymentDialog({ initialRoomId, onClose, onSaved, payments,
   const projectedRoom = selectedRoom
     ? paymentType === "deposit"
       ? { ...selectedRoom, depositPaid: (selectedRoom.depositPaid ?? 0) + paymentAmount }
-      : { ...selectedRoom, paid: selectedRoom.paid + paymentAmount }
+      : paymentType === "electricity"
+        ? { ...selectedRoom, electricityPaid: (selectedRoom.electricityPaid ?? 0) + paymentAmount }
+        : { ...selectedRoom, paid: selectedRoom.paid + paymentAmount }
     : undefined;
-  const projectedBalance = projectedRoom ? roomBalance(projectedRoom) : 0;
-  const projectedStatus = projectedRoom ? calculatedRoomStatus(projectedRoom) : "unpaid";
-  const balanceBefore = selectedRoom ? roomBalance(selectedRoom) : 0;
+  const projectedBalance = projectedRoom ? accountBalance(projectedRoom, paymentType) : 0;
+  const projectedStatus = projectedRoom ? accountStatus(projectedRoom, paymentType) : "unpaid";
+  const balanceBefore = selectedRoom ? accountBalance(selectedRoom, paymentType) : 0;
   const receiptNo = nextPaymentReceipt(receivedAt, payments, receiptPrefix);
-  const cleanReference = normalisedReference(reference);
   const duplicateReference = method !== "cash" ? findDuplicatePaymentReference(payments, reference) : undefined;
   const possibleDuplicate = payments.some((payment) => payment.roomId === roomId && payment.receivedAt.slice(0, 10) === receivedAt && payment.amount === paymentAmount);
   const warnings = [
-    method !== "cash" && !cleanReference ? `${method === "bank" ? "Bank reference" : "M-Pesa code"} is empty. Add it if available before saving.` : "",
     possibleDuplicate ? "The same room, date, and amount already exists. Confirm this is a separate payment." : "",
-    paymentType !== "deposit" && balanceBefore > 0 && projectedBalance < 0 ? `This is ${formatKes(projectedBalance)} above the current balance. The extra money will become credit.` : "",
+    paymentType === "rent" && balanceBefore > 0 && projectedBalance < 0 ? `This is ${formatKes(projectedBalance)} above the current balance. The extra money will become credit.` : "",
     paymentType === "deposit" && selectedRoom && paymentAmount > roomDepositDue(selectedRoom) ? `This is ${formatKes(paymentAmount - roomDepositDue(selectedRoom))} above the outstanding deposit. Check the amount before saving.` : "",
+    paymentType === "electricity" && selectedRoom && paymentAmount > roomElectricityDue(selectedRoom) ? `This is ${formatKes(paymentAmount - roomElectricityDue(selectedRoom))} above the outstanding electricity fee. Check the amount before saving.` : "",
   ].filter(Boolean);
   const resultTone = balanceTone(projectedBalance);
 
@@ -129,10 +146,6 @@ export function RecordPaymentDialog({ initialRoomId, onClose, onSaved, payments,
     }
     if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
       setError("Enter a payment amount above zero.");
-      return;
-    }
-    if (method !== "cash" && !cleanReference) {
-      setError(`Enter the ${method === "bank" ? "bank reference" : "M-Pesa code"} before continuing.`);
       return;
     }
     if (duplicateReference) {
@@ -196,7 +209,7 @@ export function RecordPaymentDialog({ initialRoomId, onClose, onSaved, payments,
         <label className="field">Amount (KES)<input autoFocus min="1" onChange={(event) => setAmount(event.target.value)} placeholder="6,500" required type="number" value={amount} /></label>
         <label className="field">Payment method<select onChange={(event) => { setMethod(event.target.value as PaymentMethod); setError(""); }} value={method}><option value="mpesa">M-Pesa</option><option value="bank">KCB Bank</option><option value="cash">Cash</option></select></label>
         <label className="field">Date received<input max={todayInNairobi()} onChange={(event) => { setReceivedAt(event.target.value); setError(""); }} required type="date" value={receivedAt} /></label>
-        <label className="field">Reference<input onChange={(event) => { setReference(event.target.value); setError(""); }} placeholder="M-Pesa code / bank ref" required={method !== "cash"} value={reference} /></label>
+        <label className="field">Reference / code (optional)<input onChange={(event) => { setReference(event.target.value); setError(""); }} placeholder="M-Pesa code / bank ref" value={reference} /></label>
         <label className="field">Recorded by<input onChange={(event) => setRecordedBy(event.target.value)} required value={recordedBy} /></label>
         <label className="field field--wide">Note (optional)<textarea onChange={(event) => setNote(event.target.value)} placeholder="Part payment, correction note, or other detail" rows={3} value={note} /></label>
         {error && <p className="form-error field--wide" role="alert">{error}</p>}

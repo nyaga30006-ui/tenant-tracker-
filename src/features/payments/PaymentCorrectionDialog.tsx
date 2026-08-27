@@ -42,10 +42,6 @@ export function PaymentCorrectionDialog({ onClose, onSaved, payment, payments, r
       setError("Enter a corrected amount above zero.");
       return;
     }
-    if (method !== "cash" && !reference.trim()) {
-      setError("Enter the M-Pesa or bank reference for this payment.");
-      return;
-    }
     if (duplicate) {
       setError(`Reference ${reference.trim()} already belongs to ${duplicate.receiptNo ?? duplicate.reference}.`);
       return;
@@ -78,7 +74,7 @@ export function PaymentCorrectionDialog({ onClose, onSaved, payment, payments, r
         <label className="field">Amount (KES)<input min="1" onChange={(event) => setAmount(event.target.value)} required type="number" value={amount} /></label>
         <label className="field">Method<select onChange={(event) => setMethod(event.target.value as PaymentMethod)} value={method}><option value="bank">Bank</option><option value="mpesa">M-Pesa</option><option value="cash">Cash</option></select></label>
         <label className="field">Date received<input max={new Date().toISOString().slice(0, 10)} onChange={(event) => { setReceivedAt(event.target.value); setError(""); }} required type="date" value={receivedAt} /></label>
-        <label className="field field--wide">Reference<input onChange={(event) => { setReference(event.target.value); setError(""); }} required={method !== "cash"} value={reference} /></label>
+        <label className="field field--wide">Reference / code (optional)<input onChange={(event) => { setReference(event.target.value); setError(""); }} value={reference} /></label>
         <label className="field field--wide">Note<textarea onChange={(event) => setNote(event.target.value)} rows={2} value={note} /></label>
         <label className="field field--wide">Reason for correction<textarea autoFocus onChange={(event) => { setReason(event.target.value); setError(""); }} placeholder="Explain what changed" required rows={3} value={reason} /></label>
         {error && <p className="form-error field--wide" role="alert">{error}</p>}

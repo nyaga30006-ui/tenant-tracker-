@@ -5,6 +5,9 @@ export function roomFixture(overrides: Partial<Room> = {}): Room {
     activeResidencyId: "residency-1",
     arrears: 0,
     credit: 0,
+    electricityDueEnabled: false,
+    electricityFee: 2500,
+    electricityPaid: 0,
     floor: 0,
     id: "room-1",
     number: "Room 01",
@@ -60,4 +63,3 @@ export function userFixture(overrides: Partial<AppUser> = {}): AppUser {
     ...overrides,
   };
 }
-

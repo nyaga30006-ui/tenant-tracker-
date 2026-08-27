@@ -20,17 +20,6 @@ interface AppShellProps {
   onNavigate: (page: PageId) => void;
 }
 
-const navigationGlyphs: Record<PageId, string> = {
-  dashboard: "📊",
-  rooms: "🏠",
-  water: "💧",
-  payments: "💳",
-  maintenance: "🔧",
-  electricity: "⚡",
-  users: "⚙️",
-  integrations: "🔌",
-};
-
 export function AppShell({ activePage, children, onNavigate }: AppShellProps) {
   const { theme, toggleTheme } = useTheme();
   const { selectedProperty } = useProperties();
@@ -136,10 +125,10 @@ export function AppShell({ activePage, children, onNavigate }: AppShellProps) {
         <nav className="premium-nav" aria-label="Main navigation">
           {visibleNavigationItems.map((item) => (
             <button aria-current={activePage === item.id ? "page" : undefined} className={`premium-nav__item premium-nav__item--${item.id}${activePage === item.id ? " is-active" : ""}`} key={item.id} onClick={() => navigate(item.id)} type="button">
-              <span aria-hidden="true" className="bicon">{navigationGlyphs[item.id]}</span><span>{item.label}</span>
+              <span className="bicon"><Icon name={item.id} size={18} /></span><span>{item.label}</span>
             </button>
           ))}
-          {!isWaterConfigurationLoading && !waterConfiguration && permissions.canConfigureWater && <button className="premium-nav__item premium-nav__item--setup" onClick={openWaterSetup} type="button"><span aria-hidden="true" className="bicon">💧</span><span>Add Water Feature</span></button>}
+          {!isWaterConfigurationLoading && !waterConfiguration && permissions.canConfigureWater && <button className="premium-nav__item premium-nav__item--setup" onClick={openWaterSetup} type="button"><span className="bicon"><Icon name="water" size={18} /></span><span>Add Water Feature</span></button>}
         </nav>
       </aside>
 
@@ -169,17 +158,17 @@ export function AppShell({ activePage, children, onNavigate }: AppShellProps) {
       {isMoreOpen && hasMoreMobileOptions && (
         <nav aria-label="More navigation options" className="premium-mobile-more" ref={mobileMorePanelRef}>
           {moreMobileItems.map((item) => (
-            <button className={`premium-mobile-more__item premium-mobile-more__item--${item.id}`} key={item.id} onClick={() => navigate(item.id)} type="button"><span aria-hidden="true" className="bicon">{navigationGlyphs[item.id]}</span><div><strong>{item.label}</strong><small>Open {item.label.toLowerCase()}</small></div><Icon name="arrow" size={15} /></button>
+            <button className={`premium-mobile-more__item premium-mobile-more__item--${item.id}`} key={item.id} onClick={() => navigate(item.id)} type="button"><span className="bicon"><Icon name={item.id} size={18} /></span><div><strong>{item.label}</strong><small>Open {item.label.toLowerCase()}</small></div><Icon name="arrow" size={15} /></button>
           ))}
-          {!isWaterConfigurationLoading && !waterConfiguration && permissions.canConfigureWater && <button onClick={openWaterSetup} type="button"><span aria-hidden="true" className="bicon">💧</span><div><strong>Add Water Feature</strong><small>Choose sell-water or buy-water tracking</small></div><Icon name="arrow" size={15} /></button>}
+          {!isWaterConfigurationLoading && !waterConfiguration && permissions.canConfigureWater && <button onClick={openWaterSetup} type="button"><span className="bicon"><Icon name="water" size={18} /></span><div><strong>Add Water Feature</strong><small>Choose sell-water or buy-water tracking</small></div><Icon name="arrow" size={15} /></button>}
         </nav>
       )}
 
       <nav className="premium-mobile-nav" aria-label="Mobile navigation">
         {primaryMobileItems.map((item) => (
-          <button aria-current={activePage === item.id ? "page" : undefined} className={`premium-mobile-nav__item premium-mobile-nav__item--${item.id}${activePage === item.id ? " is-active" : ""}`} key={item.id} onClick={() => navigate(item.id)} type="button"><span aria-hidden="true" className="bicon">{navigationGlyphs[item.id]}</span><small>{item.shortLabel}</small></button>
+          <button aria-current={activePage === item.id ? "page" : undefined} className={`premium-mobile-nav__item premium-mobile-nav__item--${item.id}${activePage === item.id ? " is-active" : ""}`} key={item.id} onClick={() => navigate(item.id)} type="button"><Icon name={item.id} size={20} /><small>{item.shortLabel}</small></button>
         ))}
-        {hasMoreMobileOptions && <button aria-expanded={isMoreOpen} className={moreMobileItems.some((item) => item.id === activePage) || isMoreOpen ? "is-active" : ""} onClick={() => setIsMoreOpen((open) => !open)} ref={mobileMoreTriggerRef} type="button"><span aria-hidden="true" className="bicon">•••</span><small>More</small></button>}
+        {hasMoreMobileOptions && <button aria-expanded={isMoreOpen} className={moreMobileItems.some((item) => item.id === activePage) || isMoreOpen ? "is-active" : ""} onClick={() => setIsMoreOpen((open) => !open)} ref={mobileMoreTriggerRef} type="button"><Icon name="more" size={20} /><small>More</small></button>}
       </nav>
 
       {isAddPropertyOpen && permissions.canAddProperties && <AddPropertyDialog onAdded={finishAddingProperty} onClose={() => setIsAddPropertyOpen(false)} />}

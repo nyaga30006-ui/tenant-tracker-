@@ -88,9 +88,12 @@ export const paymentRepository = {
         if (existingReference.exists()) throw new Error(`Payment reference ${payment.reference} already exists.`);
       }
       transaction.set(doc(database, propertyDocumentPath(propertyId, PROPERTY_SUBCOLLECTIONS.payments, payment.id)), paymentDocument(payment, roomAfterPayment, referenceKey));
-      if (roomAfterPayment) transaction.set(doc(database, propertyDocumentPath(propertyId, PROPERTY_SUBCOLLECTIONS.rooms, roomAfterPayment.id)), firestoreDocument(roomAfterPayment));
+      if (roomAfterPayment) {
+        const { id: roomId, ...roomData } = roomAfterPayment;
+        transaction.set(doc(database, propertyDocumentPath(propertyId, PROPERTY_SUBCOLLECTIONS.rooms, roomId)), firestoreDocument(roomData));
+      }
       if (residencyAfterPayment) transaction.set(doc(database, propertyDocumentPath(propertyId, PROPERTY_SUBCOLLECTIONS.tenantResidencies, residencyAfterPayment.id)), firestoreDocument(residencyAfterPayment));
-      if (referenceDocument) transaction.set(referenceDocument, firestoreDocument({ paymentId: payment.id, reference: normalisedReference(payment.reference) }));
+      if (referenceDocument) transaction.set(referenceDocument, firestoreDocument({ paymentId: payment.id, reference: payment.reference.trim() }));
     });
   },
 };

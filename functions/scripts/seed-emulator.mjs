@@ -82,15 +82,15 @@ const properties = {
 };
 
 const nyagaRooms = [
-  { id: "room-01", activeResidencyId: "residency-01", number: "01", floor: 0, tenant: "Alice Mwangi", rent: 7500, paid: 7500, arrears: 0, credit: 0, status: "paid", depositPaid: 7500, depositRequired: 7500, depositDueEnabled: true, electricityFee: 2500, electricityDueEnabled: false },
-  { id: "room-02", activeResidencyId: "residency-02", number: "02", floor: 0, tenant: "Brian Otieno", rent: 8000, paid: 4000, arrears: 0, credit: 0, status: "partial", depositPaid: 0, depositRequired: 8000, depositDueEnabled: false, electricityFee: 2500, electricityDueEnabled: false },
-  { id: "room-03", activeResidencyId: "residency-03", number: "03", floor: 1, tenant: "Carol Wanjiku", rent: 7500, paid: 0, arrears: 7500, credit: 0, status: "unpaid", depositPaid: 5000, depositRequired: 7500, depositDueEnabled: true, electricityFee: 2500, electricityDueEnabled: true },
-  { id: "room-04", number: "04", floor: 1, tenant: "", rent: 7000, paid: 0, arrears: 0, credit: 0, status: "vacant", depositPaid: 0, depositRequired: 7000, depositDueEnabled: false, electricityFee: 2500, electricityDueEnabled: false },
+  { id: "room-01", activeResidencyId: "residency-01", number: "01", floor: 0, tenant: "Alice Mwangi", rent: 7500, paid: 7500, arrears: 0, credit: 0, status: "paid", depositPaid: 7500, depositRequired: 7500, depositDueEnabled: true, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false },
+  { id: "room-02", activeResidencyId: "residency-02", number: "02", floor: 0, tenant: "Brian Otieno", rent: 8000, paid: 4000, arrears: 0, credit: 0, status: "partial", depositPaid: 0, depositRequired: 8000, depositDueEnabled: false, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false },
+  { id: "room-03", activeResidencyId: "residency-03", number: "03", floor: 1, tenant: "Carol Wanjiku", rent: 7500, paid: 0, arrears: 7500, credit: 0, status: "unpaid", depositPaid: 5000, depositRequired: 7500, depositDueEnabled: true, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: true },
+  { id: "room-04", number: "04", floor: 1, tenant: "", rent: 7000, paid: 0, arrears: 0, credit: 0, status: "vacant", depositPaid: 0, depositRequired: 7000, depositDueEnabled: false, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false },
 ];
 
 const riversideRooms = [
-  { id: "room-a", activeResidencyId: "residency-a", number: "A", floor: 0, tenant: "David Kamau", rent: 8000, paid: 8000, arrears: 0, credit: 500, status: "credit", depositPaid: 8000, depositRequired: 8000, depositDueEnabled: true, electricityFee: 2500, electricityDueEnabled: false },
-  { id: "room-b", number: "B", floor: 0, tenant: "", rent: 8000, paid: 0, arrears: 0, credit: 0, status: "vacant", depositPaid: 0, depositRequired: 8000, depositDueEnabled: false, electricityFee: 2500, electricityDueEnabled: false },
+  { id: "room-a", activeResidencyId: "residency-a", number: "A", floor: 0, tenant: "David Kamau", rent: 8000, paid: 8000, arrears: 0, credit: 500, status: "credit", depositPaid: 8000, depositRequired: 8000, depositDueEnabled: true, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false },
+  { id: "room-b", number: "B", floor: 0, tenant: "", rent: 8000, paid: 0, arrears: 0, credit: 0, status: "vacant", depositPaid: 0, depositRequired: 8000, depositDueEnabled: false, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false },
 ];
 
 await Promise.all([

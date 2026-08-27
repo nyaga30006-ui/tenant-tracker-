@@ -28,6 +28,7 @@ function fromRoomDocument(snapshot: QueryDocumentSnapshot<DocumentData>): Room {
     depositRequired: finiteNumber(data.depositRequired),
     depositDueEnabled: data.depositDueEnabled === true,
     electricityFee: finiteNumber(data.electricityFee, 2500),
+    electricityPaid: finiteNumber(data.electricityPaid),
     electricityDueEnabled: data.electricityDueEnabled === true,
     lastResetMonth: optionalString(data.lastResetMonth),
     bookSetAt: optionalString(data.bookSetAt),

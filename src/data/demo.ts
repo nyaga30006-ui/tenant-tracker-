@@ -51,11 +51,11 @@ export const demoUsers: AppUser[] = [
 ];
 
 export const demoRooms: Room[] = [
-  { id: "r1", number: "Room 01", floor: 0, tenant: "Anne Wanjiku", rent: 6500, paid: 6500, arrears: 0, credit: 0, status: "paid", depositPaid: 6500, depositRequired: 6500, depositDueEnabled: true, electricityFee: 2500, electricityDueEnabled: false, lastResetMonth: "2026-08" },
-  { id: "r2", number: "Room 02", floor: 0, tenant: "David Otieno", rent: 6500, paid: 3500, arrears: 0, credit: 0, status: "partial", depositPaid: 3000, depositRequired: 6500, depositDueEnabled: true, electricityFee: 2500, electricityDueEnabled: false, lastResetMonth: "2026-08" },
-  { id: "r3", number: "Room 03", floor: 0, tenant: "", rent: 7000, paid: 0, arrears: 0, credit: 0, status: "vacant", depositPaid: 0, depositRequired: 7000, depositDueEnabled: false, electricityFee: 2500, electricityDueEnabled: false, lastResetMonth: "2026-08" },
-  { id: "r4", number: "Room 12", floor: 1, tenant: "Mary Njeri", rent: 7500, paid: 0, arrears: 1500, credit: 0, status: "unpaid", depositPaid: 0, depositRequired: 7500, depositDueEnabled: false, electricityFee: 2500, electricityDueEnabled: false, lastResetMonth: "2026-08" },
-  { id: "r5", number: "Room 21", floor: 2, tenant: "Peter Mwangi", rent: 8000, paid: 8500, arrears: 0, credit: 500, status: "credit", depositPaid: 8000, depositRequired: 8000, depositDueEnabled: true, electricityFee: 2500, electricityDueEnabled: false, lastResetMonth: "2026-08" },
+  { id: "r1", number: "Room 01", floor: 0, tenant: "Anne Wanjiku", rent: 6500, paid: 6500, arrears: 0, credit: 0, status: "paid", depositPaid: 6500, depositRequired: 6500, depositDueEnabled: true, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false, lastResetMonth: "2026-08" },
+  { id: "r2", number: "Room 02", floor: 0, tenant: "David Otieno", rent: 6500, paid: 3500, arrears: 0, credit: 0, status: "partial", depositPaid: 3000, depositRequired: 6500, depositDueEnabled: true, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false, lastResetMonth: "2026-08" },
+  { id: "r3", number: "Room 03", floor: 0, tenant: "", rent: 7000, paid: 0, arrears: 0, credit: 0, status: "vacant", depositPaid: 0, depositRequired: 7000, depositDueEnabled: false, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false, lastResetMonth: "2026-08" },
+  { id: "r4", number: "Room 12", floor: 1, tenant: "Mary Njeri", rent: 7500, paid: 0, arrears: 1500, credit: 0, status: "unpaid", depositPaid: 0, depositRequired: 7500, depositDueEnabled: false, electricityFee: 2500, electricityPaid: 2500, electricityDueEnabled: true, lastResetMonth: "2026-08" },
+  { id: "r5", number: "Room 21", floor: 2, tenant: "Peter Mwangi", rent: 8000, paid: 8500, arrears: 0, credit: 500, status: "credit", depositPaid: 8000, depositRequired: 8000, depositDueEnabled: true, electricityFee: 2500, electricityPaid: 0, electricityDueEnabled: false, lastResetMonth: "2026-08" },
 ];
 
 export const demoPayments: Payment[] = [

@@ -35,9 +35,9 @@ function paymentProvider(method: RecordedPaymentDraft["method"]): PaymentProvide
 export function RoomsPage() {
   const { currentUser, permissions } = useAccess();
   const { selectedProperty } = useProperties();
-  const { payments, recordPayment, setPayments } = usePayments();
+  const { payments, recordPayment } = usePayments();
   const { rooms, setRooms } = useRooms();
-  const { setTenantResidencies, tenantResidencies } = useTenantResidencies();
+  const { saveTenantMoveIn, saveTenantMoveOut, tenantResidencies } = useTenantResidencies();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RoomFilter>("all");
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
@@ -86,6 +86,8 @@ export function RoomsPage() {
       depositRequired: draft.rent,
       depositDueEnabled: false,
       electricityFee: 2500,
+      electricityPaid: 0,
+      electricityDueEnabled: false,
     };
     setRooms((current) => [...current, room]);
     setIsAddRoomOpen(false);
@@ -104,8 +106,8 @@ export function RoomsPage() {
     setToast(`${draft.number} was updated.`);
   }
 
-  function moveTenantIn(draft: MoveInTenantDraft) {
-    if (!permissions.canManageRooms || !moveInRoom || moveInRoom.tenant) return;
+  async function moveTenantIn(draft: MoveInTenantDraft) {
+    if (!permissions.canManageResidencies || !moveInRoom || moveInRoom.tenant) return;
     const residencyId = crypto.randomUUID();
     const moveInDay = Number(draft.moveInDate.slice(8, 10));
     const residency: TenantResidency = {
@@ -119,11 +121,8 @@ export function RoomsPage() {
       tenantName: draft.tenantName,
       tenantPhone: draft.tenantPhone || undefined,
     };
-    setTenantResidencies((current) => [residency, ...current]);
-    setRooms((current) => current.map((room) => {
-      if (room.id !== moveInRoom.id) return room;
-      const next: Room = {
-        ...room,
+    const next: Room = {
+        ...moveInRoom,
         activeResidencyId: residencyId,
         arrears: 0,
         bookBalanceDue: undefined,
@@ -135,43 +134,49 @@ export function RoomsPage() {
         depositPaid: draft.depositHeld,
         depositRequired: draft.depositRequired,
         electricityDueEnabled: draft.electricityDueEnabled,
+        electricityFee: moveInRoom.electricityFee ?? 2500,
+        electricityPaid: 0,
         lastResetMonth: moveInDay > selectedProperty.billingResetDay ? draft.moveInDate.slice(0, 7) : undefined,
         paid: 0,
         rent: draft.rent,
         status: "unpaid",
         tenant: draft.tenantName,
-      };
-      return { ...next, status: calculatedRoomStatus(next) };
-    }));
-    setMoveInRoomId(null);
-    setToast(`${draft.tenantName} moved into ${moveInRoom.number}.`);
+    };
+    try {
+      await saveTenantMoveIn(residency, { ...next, status: calculatedRoomStatus(next) });
+      setMoveInRoomId(null);
+      setToast(`${draft.tenantName} moved into ${moveInRoom.number}.`);
+    } catch (error) {
+      setToast(error instanceof Error ? `Move-in not saved: ${error.message}` : "Move-in could not be saved.");
+    }
   }
 
-  function moveTenantOut(draft: MoveOutTenantDraft) {
-    if (!permissions.canManageRooms || !moveOutRoom || !moveOutRoom.tenant || !moveOutRoom.activeResidencyId) return;
+  async function moveTenantOut(draft: MoveOutTenantDraft) {
+    if (!permissions.canManageResidencies || !moveOutRoom || !moveOutRoom.tenant || !moveOutRoom.activeResidencyId || !moveOutResidency) return;
     const residencyId = moveOutRoom.activeResidencyId;
     const tenantName = moveOutRoom.tenant;
     const depositHeld = moveOutRoom.depositPaid ?? 0;
-    setTenantResidencies((current) => current.map((residency) => residency.id === residencyId ? {
-      ...residency,
+    const residencyAfterMoveOut: TenantResidency = {
+      ...moveOutResidency,
       deductionNote: draft.deductionNote || undefined,
       depositAppliedToBalance: draft.depositAppliedToBalance,
       depositDeducted: draft.depositDeducted,
       depositHeld,
       depositRefunded: draft.depositRefunded,
+      depositSettlementStatus: currentUser.role === "caretaker" ? "pending" : "settled",
       finalBalance: draft.finalBalance,
       moveOutDate: draft.moveOutDate,
       moveOutNote: draft.moveOutNote || undefined,
       movedOutBy: currentUser.username,
       status: "former",
-    } : residency));
-    setPayments((current) => current.map((payment) => {
+    };
+    const paymentsAfterMoveOut: Payment[] = payments.map((payment) => {
       const belongsToResidency = payment.residencyId === residencyId
         || (!payment.residencyId && payment.roomId === moveOutRoom.id && (payment.residency ?? "current") === "current");
-      return belongsToResidency ? { ...payment, residency: "former", residencyId } : payment;
-    }));
-    setRooms((current) => current.map((room) => room.id === moveOutRoom.id ? {
-      ...room,
+      return belongsToResidency ? { ...payment, residency: "former" as const, residencyId } : payment;
+    });
+    const roomAfterMoveOut: Room = {
+      ...moveOutRoom,
       activeResidencyId: undefined,
       arrears: 0,
       bookBalanceDue: undefined,
@@ -181,14 +186,21 @@ export function RoomsPage() {
       credit: 0,
       depositDueEnabled: false,
       depositPaid: 0,
-      depositRequired: room.rent,
+      depositRequired: moveOutRoom.rent,
+      electricityDueEnabled: false,
+      electricityPaid: 0,
       lastResetMonth: undefined,
       paid: 0,
       status: "vacant",
       tenant: "",
-    } : room));
-    setMoveOutRoomId(null);
-    setToast(`${tenantName} moved out. ${moveOutRoom.number} is ready for the next tenant.`);
+    };
+    try {
+      await saveTenantMoveOut(residencyAfterMoveOut, roomAfterMoveOut, paymentsAfterMoveOut);
+      setMoveOutRoomId(null);
+      setToast(`${tenantName} moved out. ${moveOutRoom.number} is ready for the next tenant.`);
+    } catch (error) {
+      setToast(error instanceof Error ? `Move-out not saved: ${error.message}` : "Move-out could not be saved.");
+    }
   }
 
   async function savePayment(draft: RecordedPaymentDraft) {
@@ -211,7 +223,7 @@ export function RoomsPage() {
       method: draft.method,
       provider: paymentProvider(draft.method),
       status: "confirmed",
-      reference: draft.reference || `MANUAL-${Date.now().toString().slice(-6)}`,
+      reference: draft.reference,
       receivedAt: `${draft.receivedAt}T12:00:00+03:00`,
       receiptNo: draft.receiptNo,
       paymentType: draft.paymentType,
@@ -228,7 +240,10 @@ export function RoomsPage() {
       setPaymentRoomId(null);
       setToast(`${formatKes(draft.amount)} recorded for ${draft.roomName}.`);
     } catch (error) {
-      setToast(error instanceof Error ? `Payment not saved: ${error.message}` : "Payment could not be saved.");
+      const message = error instanceof Error ? error.message : "";
+      setToast(/permission-denied|permission_denied|evaluation error/i.test(message)
+        ? "Payment not saved: your account is not permitted to update this property. Refresh and try again or contact the admin."
+        : message ? `Payment not saved: ${message}` : "Payment could not be saved.");
     }
   }
 
@@ -278,7 +293,7 @@ export function RoomsPage() {
       <div className="cycle-bar"><span>Scheduled monthly reset:</span><strong>{nextResetLabel(selectedProperty.billingResetDay)}</strong></div>
 
       <section className="room-cards" aria-live="polite">
-        {filteredRooms.map((room) => <RoomCard canEdit={permissions.canManageRooms} canManageResidency={permissions.canManageRooms} canRecordPayment={permissions.canRecordPayments} canSetBook={permissions.canSetBooks && currentUser.role === "admin"} key={room.id} onEdit={setEditingRoomId} onHistory={setHistoryRoomId} onMoveIn={setMoveInRoomId} onMoveOut={setMoveOutRoomId} onRecordPayment={setPaymentRoomId} onSetBook={setSetBookRoomId} room={room} />)}
+        {filteredRooms.map((room) => <RoomCard canEdit={permissions.canManageRooms} canManageResidency={permissions.canManageResidencies} canRecordPayment={permissions.canRecordPayments} canSetBook={permissions.canSetBooks && currentUser.role === "admin"} key={room.id} onEdit={setEditingRoomId} onHistory={setHistoryRoomId} onMoveIn={setMoveInRoomId} onMoveOut={setMoveOutRoomId} onRecordPayment={setPaymentRoomId} onSetBook={setSetBookRoomId} room={room} />)}
         {!filteredRooms.length && <div className="feature-empty"><Icon name="rooms" size={25} /><strong>No matching rooms</strong><p>Try another room, tenant, or status.</p></div>}
       </section>
 
@@ -287,8 +302,8 @@ export function RoomsPage() {
       {historyRoom && <RoomHistoryDialog onClose={() => setHistoryRoomId(null)} payments={payments} residencies={tenantResidencies.filter((residency) => residency.roomId === historyRoom.id)} room={historyRoom} />}
       {paymentRoomId && permissions.canRecordPayments && <RecordPaymentDialog initialRoomId={paymentRoomId} onClose={() => setPaymentRoomId(null)} onSaved={savePayment} payments={payments} preferredMethod={selectedProperty.preferredPaymentMethod} recordedBy={currentUser.username} receiptPrefix={propertyReceiptPrefix(selectedProperty.name)} rooms={rooms} />}
       {setBookRoom && permissions.canSetBooks && currentUser.role === "admin" && <SetBookDialog onClose={() => setSetBookRoomId(null)} onSaved={setOpeningBook} room={setBookRoom} />}
-      {moveInRoom && permissions.canManageRooms && !moveInRoom.tenant && <MoveInTenantDialog onClose={() => setMoveInRoomId(null)} onSaved={moveTenantIn} room={moveInRoom} />}
-      {moveOutRoom && permissions.canManageRooms && moveOutRoom.tenant && <MoveOutTenantDialog onClose={() => setMoveOutRoomId(null)} onSaved={moveTenantOut} residency={moveOutResidency} room={moveOutRoom} />}
+      {moveInRoom && permissions.canManageResidencies && !moveInRoom.tenant && <MoveInTenantDialog canSetFinancialTerms={currentUser.role !== "caretaker"} onClose={() => setMoveInRoomId(null)} onSaved={(draft) => void moveTenantIn(draft)} room={moveInRoom} />}
+      {moveOutRoom && permissions.canManageResidencies && moveOutRoom.tenant && <MoveOutTenantDialog canSettleDeposit={currentUser.role !== "caretaker"} onClose={() => setMoveOutRoomId(null)} onSaved={(draft) => void moveTenantOut(draft)} residency={moveOutResidency} room={moveOutRoom} />}
       {toast && <div aria-live="polite" className="app-toast"><span><Icon name="check" size={16} /></span>{toast}</div>}
     </section>
   );

@@ -1,7 +1,7 @@
 import { Icon } from "../../../components/ui/Icon";
 import { formatKes } from "../../../lib/format";
 import type { Room } from "../../../types/domain";
-import { calculatedRoomStatus, roomBalance, roomDepositDue, roomDepositTarget, roomElectricityFee, roomMonthlyCharge } from "../roomFinance";
+import { calculatedRoomStatus, roomBalance, roomDepositDue, roomDepositTarget, roomElectricityDue, roomElectricityFee, roomMonthlyCharge } from "../roomFinance";
 
 interface RoomCardProps {
   canEdit: boolean;
@@ -23,12 +23,14 @@ const badgeStatusClasses = { credit: "badge-over", paid: "badge-paid", partial: 
 
 export function RoomCard({ canEdit, canManageResidency, canRecordPayment, canSetBook, onEdit, onHistory, onMoveIn, onMoveOut, onRecordPayment, onSetBook, room }: RoomCardProps) {
   const status = calculatedRoomStatus(room);
-  const electricity = roomElectricityFee(room);
   const monthlyDue = roomMonthlyCharge(room);
   const balance = roomBalance(room);
   const depositTarget = roomDepositTarget(room);
   const depositPaid = room.depositPaid ?? 0;
   const depositDue = roomDepositDue(room);
+  const electricityTarget = roomElectricityFee(room);
+  const electricityPaid = room.electricityPaid ?? 0;
+  const electricityDue = roomElectricityDue(room);
   const isOccupied = Boolean(room.tenant);
 
   return (
@@ -44,13 +46,18 @@ export function RoomCard({ canEdit, canManageResidency, canRecordPayment, canSet
         <div className="rci">
           <div className="rci-label">Monthly Due</div>
           <div className="rci-val">{formatKes(monthlyDue)} {room.arrears > 0 && <em className="diff-neg">(+{room.arrears.toLocaleString("en-KE")} arrears)</em>}</div>
-          <span className="rci-note">{electricity ? `Rent ${room.rent.toLocaleString("en-KE")} + electricity ${electricity.toLocaleString("en-KE")}` : `Rent ${room.rent.toLocaleString("en-KE")} only`}</span>
+          <span className="rci-note">Rent {room.rent.toLocaleString("en-KE")} only</span>
         </div>
         <div className="rci"><div className="rci-label">Paid This Month</div><div className="rci-val">{formatKes(room.paid)} {room.credit > 0 && <em className="diff-pos">(+{room.credit.toLocaleString("en-KE")} credit)</em>}</div></div>
         <div className="rci">
           <div className="rci-label">Deposit</div>
           <div className="rci-val">{formatKes(depositPaid)} / {formatKes(depositTarget)}</div>
           <span className="rci-note">{room.depositDueEnabled ? (depositDue > 0 ? `(${formatKes(depositDue)} due)` : "(fully paid)") : "(not due)"}</span>
+        </div>
+        <div className="rci">
+          <div className="rci-label">One-time electricity fee</div>
+          <div className="rci-val">{formatKes(electricityPaid)} / {formatKes(electricityTarget)}</div>
+          <span className="rci-note">{room.electricityDueEnabled ? (electricityDue > 0 ? `(${formatKes(electricityDue)} due)` : "(fully paid)") : "(not due)"}</span>
         </div>
         <div className="rci">
           <div className="rci-label">Balance</div>

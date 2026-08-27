@@ -4,9 +4,10 @@ import { findDuplicatePaymentReference } from "../../lib/validation";
 import { applyPaymentCorrectionToResidency, applyPaymentCorrectionToRoom, applyPaymentToRoom } from "./paymentLedger";
 
 describe("payment recording and corrections", () => {
-  it("applies rent and deposit payments to the right ledgers", () => {
+  it("applies rent, deposit, and electricity payments to separate ledgers", () => {
     expect(applyPaymentToRoom(roomFixture(), "rent", 2500).paid).toBe(2500);
     expect(applyPaymentToRoom(roomFixture({ depositPaid: 1000 }), "deposit", 2000).depositPaid).toBe(3000);
+    expect(applyPaymentToRoom(roomFixture({ electricityPaid: 500 }), "electricity", 2000)).toMatchObject({ electricityPaid: 2500, paid: 0 });
   });
 
   it("reverses the old amount before applying a correction", () => {
@@ -24,6 +25,12 @@ describe("payment recording and corrections", () => {
     expect(applyPaymentCorrectionToResidency(residencyFixture({ depositHeld: 3000 }), previous, corrected).depositHeld).toBe(0);
   });
 
+  it("corrects electricity payments without changing rent paid", () => {
+    const previous = paymentFixture({ amount: 2500, paymentType: "electricity" });
+    const corrected = paymentFixture({ amount: 2000, paymentType: "electricity", corrected: true });
+    expect(applyPaymentCorrectionToRoom(roomFixture({ electricityPaid: 2500, paid: 3000 }), previous, corrected)).toMatchObject({ electricityPaid: 2000, paid: 3000 });
+  });
+
   it("does not alter the current room when correcting a former residency", () => {
     const previous = paymentFixture({ residency: "former", residencyId: "old-residency" });
     const corrected = { ...previous, amount: 7000, corrected: true };
@@ -37,4 +44,3 @@ describe("payment recording and corrections", () => {
     expect(findDuplicatePaymentReference(payments, "qwe123ABC", "payment-1")).toBeUndefined();
   });
 });
-

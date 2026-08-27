@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "test": "npm run build && node --test lib/monthlyReset.test.js",
-    "test:emulator": "npm run build && node --test lib/monthlyReset.integration.test.js",
+    "test:emulator": "npm run build && node --test lib/monthlyReset.integration.test.js lib/tenantResidency.integration.test.js",
     "seed:emulator": "node scripts/seed-emulator.mjs"
   },
   "dependencies": {

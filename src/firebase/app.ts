@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
+import { connectFunctionsEmulator, getFunctions, type Functions } from "firebase/functions";
 import { allowsLiveFirebaseFromLocalhost, isLocalDevelopmentHost, usesFirebaseEmulators } from "../config/dataBackend";
 
 declare global {
@@ -25,6 +26,7 @@ const emulatorConfig: FirebaseOptions = {
 };
 
 let firestoreEmulatorConnected = false;
+let functionsEmulatorConnected = false;
 
 export function getFirebaseConfig(): FirebaseOptions {
   if (window.NYAGA_FIREBASE_CONFIG?.projectId) return window.NYAGA_FIREBASE_CONFIG;
@@ -54,6 +56,17 @@ export function getFirebaseDatabase(): Firestore {
     firestoreEmulatorConnected = true;
   }
   return database;
+}
+
+export function getFirebaseFunctions(): Functions {
+  const functions = getFunctions(getFirebaseApp(), "africa-south1");
+  if (usesFirebaseEmulators() && !functionsEmulatorConnected) {
+    const host = import.meta.env.VITE_FIREBASE_EMULATOR_HOST || "127.0.0.1";
+    const port = Number(import.meta.env.VITE_FIREBASE_FUNCTIONS_EMULATOR_PORT || 5001);
+    connectFunctionsEmulator(functions, host, port);
+    functionsEmulatorConnected = true;
+  }
+  return functions;
 }
 
 export function assertFirebaseConnectionIsSafe(): void {

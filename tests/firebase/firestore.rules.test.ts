@@ -10,6 +10,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
   setDoc,
   updateDoc,
   writeBatch,
@@ -82,8 +83,15 @@ const property = {
 };
 
 const room = {
+  activeResidencyId: "residency-01",
   arrears: 7500,
   credit: 0,
+  depositDueEnabled: false,
+  depositPaid: 0,
+  depositRequired: 7500,
+  electricityDueEnabled: true,
+  electricityFee: 2500,
+  electricityPaid: 0,
   floor: 0,
   number: "01",
   paid: 0,
@@ -212,5 +220,77 @@ describe("Firestore property and role isolation", () => {
       reference: "MPESA001",
     });
     await assertFails(duplicate.commit());
+  });
+
+  test("M-Pesa and bank payments may omit a reference", async () => {
+    const database = environment.authenticatedContext("caretaker").firestore();
+    await assertSucceeds(setDoc(doc(database, "properties", "property-a", "payments", "no-reference"), {
+      ...payment("no-reference", ""),
+      reference: "",
+    }));
+  });
+
+  test("admin can save the complete payment transaction produced by the app", async () => {
+    const database = environment.authenticatedContext("admin").firestore();
+    const paymentId = "repository-payment";
+    const referenceKey = "KCBTEST002";
+    const batch = writeBatch(database);
+    batch.set(doc(database, "properties", "property-a", "payments", paymentId), {
+      ...payment(paymentId, referenceKey),
+      by: "Test Admin",
+      date: "22 Aug 2026",
+      id: paymentId,
+      monthKey: "2026-08",
+      mpesaCode: "",
+      paymentType: "electricity",
+      provider: "kcb",
+      rawDate: "2026-08-22",
+      receiptNo: "TST-202608-0002",
+      recordedBy: "Test Admin",
+      reference: "kcb test 002",
+      refNumber: "kcb test 002",
+      residency: "current",
+      residencyId: "residency-01",
+      roomNumber: "01",
+      serial: "TST-202608-0002",
+      ts: 1787378400000,
+      updatedAt: serverTimestamp(),
+    });
+    batch.set(doc(database, "properties", "property-a", "rooms", "room-01"), {
+      ...room,
+      electricityDueEnabled: true,
+      electricityFee: 2500,
+      electricityPaid: 2500,
+      id: "room-01",
+      updatedAt: serverTimestamp(),
+    });
+    batch.set(doc(database, "properties", "property-a", "paymentReferences", referenceKey), {
+      paymentId,
+      reference: "kcb test 002",
+      updatedAt: serverTimestamp(),
+    });
+    await assertSucceeds(batch.commit());
+  });
+
+  test("caretaker can atomically record a one-time electricity payment", async () => {
+    const database = environment.authenticatedContext("caretaker").firestore();
+    const paymentId = "caretaker-electricity-payment";
+    const referenceKey = "MPESAELECTRICITY01";
+    const batch = writeBatch(database);
+    batch.set(doc(database, "properties", "property-a", "payments", paymentId), {
+      ...payment(paymentId, referenceKey),
+      paymentType: "electricity",
+      reference: "mpesa electricity 01",
+    });
+    batch.set(doc(database, "properties", "property-a", "rooms", "room-01"), {
+      ...room,
+      electricityPaid: 2500,
+      updatedAt: serverTimestamp(),
+    });
+    batch.set(doc(database, "properties", "property-a", "paymentReferences", referenceKey), {
+      paymentId,
+      reference: "mpesa electricity 01",
+    });
+    await assertSucceeds(batch.commit());
   });
 });

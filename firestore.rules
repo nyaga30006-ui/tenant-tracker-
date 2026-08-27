@@ -52,10 +52,12 @@ service cloud.firestore {
         && request.resource.data.receivedAt is string
         && request.resource.data.status in ['pending', 'confirmed', 'failed']
         && request.resource.data.method in ['cash', 'mpesa', 'bank']
+        && request.resource.data.reference is string
+        && request.resource.data.referenceKey is string
         && (request.resource.data.method == 'cash'
-          || (request.resource.data.reference is string
-            && request.resource.data.reference.size() > 0
-            && request.resource.data.referenceKey is string
+          || (request.resource.data.reference.size() == 0
+            && request.resource.data.referenceKey.size() == 0)
+          || (request.resource.data.reference.size() > 0
             && request.resource.data.referenceKey.size() > 0
             && getAfter(/databases/$(database)/documents/properties/$(propertyId)/paymentReferences/$(request.resource.data.referenceKey)).data.paymentId == paymentId));
     }
@@ -84,7 +86,7 @@ service cloud.firestore {
           || (assignedTo(propertyId)
             && caretaker()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'paid', 'arrears', 'credit', 'status', 'depositPaid', 'updatedAt'
+              'paid', 'arrears', 'credit', 'status', 'depositPaid', 'electricityPaid', 'updatedAt'
             ]));
       }
 

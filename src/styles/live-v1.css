@@ -774,7 +774,7 @@ select.legacy-filter-control, .filter-sel { padding-right: 32px; }
 }
 .legacy-room-card--vacant, .room-card.vacant { border: 1.5px dashed #3f6b6788; background: repeating-linear-gradient(45deg, var(--surface) 0, var(--surface) 9px, #3f6b670e 9px, #3f6b670e 18px); }
 .legacy-room-card--unpaid, .room-card.unpaid-room { border: 1.5px solid #a23b2e55; background: #a23b2e08; }
-.legacy-room-card--partial, .room-card.partial-room { border: 1.5px solid #d0a649; background: #f5e5c2; }
+.legacy-room-card--partial, .room-card.partial-room { border: 1.5px solid #d8c39a; background: #f5f0e6; }
 .legacy-room-card--paid, .legacy-room-card--credit, .room-card.paid-room, .room-card.over-room { border: 1px solid #2f6b4f33; border-left: 4px solid var(--green); background: var(--surface); }
 .legacy-room-card__header, .room-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .legacy-room-card__header h2, .room-card-num { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--text); font-family: inherit; font-size: 15px; font-weight: 700; }
@@ -809,7 +809,7 @@ select.legacy-filter-control, .filter-sel { padding-right: 32px; }
 }
 .legacy-stamp--paid, .legacy-stamp--credit, .badge-paid, .badge-current, .badge-mpesa, .badge-resolved { border: 1px solid #2f6b4f44; background: #2f6b4f18; color: var(--green); }
 .legacy-stamp--unpaid, .badge-unpaid, .badge-open { border: 1px solid #a23b2e44; background: #a23b2e18; color: var(--red); }
-.legacy-stamp--partial, .badge-progress, .badge-cash { border: 1px solid #9c6b1f44; background: #9c6b1f18; color: var(--orange); }
+.legacy-stamp--partial, .badge-progress, .badge-cash { border: 1px solid #9c6b1f38; background: #9c6b1f0f; color: #8a641f; }
 .legacy-stamp--vacant, .badge-vacant { border: 1.5px dashed var(--teal); background: #3f6b6714; color: var(--teal); box-shadow: none; }
 .legacy-stamp--reported { border: 1px solid #a23b2e44; background: #a23b2e18; color: var(--red); }
 .legacy-stamp--in-progress { border: 1px solid #9c6b1f44; background: #9c6b1f18; color: var(--orange); }
@@ -1511,6 +1511,6 @@ html[data-theme="dark"] .premium-collection { border-color: #d2685a66; border-le
 html[data-theme="dark"] #dash-rent-performance,
 html[data-theme="dark"] .lifetime-collection-card { border-color: #6fa0c966; border-left-color: var(--blue); background: linear-gradient(135deg, #2c5c8222, var(--surface)); }
 html[data-theme="dark"] .legacy-room-card--partial,
-html[data-theme="dark"] .room-card.partial-room { background: #3a2f17; border-color: var(--orange); }
+html[data-theme="dark"] .room-card.partial-room { background: #2d2a23; border-color: #8d7548; }
 html[data-theme="dark"] .firebase-gate { background: radial-gradient(ellipse at 50% 0%, #d4ac3a12 0%, transparent 55%), var(--bg); }
 html[data-theme="dark"] .firebase-gate .firebase-gate__submit { background: linear-gradient(135deg, #1f2d3d, #3d5266); }

@@ -15,6 +15,7 @@ import { createVacantRooms } from "../features/rooms/roomFactory";
 import { notificationStateRepository } from "../repositories/notificationStateRepository";
 import { paymentRepository } from "../repositories/paymentRepository";
 import { propertyDataRepository, type FirebasePropertyData, type FirebasePropertyDataKey } from "../repositories/propertyDataRepository";
+import { tenantResidencyRepository } from "../repositories/tenantResidencyRepository";
 import { userRepository } from "../repositories/userRepository";
 import type { AppUser, BillingResetRecord, ElectricityBill, MaintenanceIssue, Payment, Room, TenantResidency, WaterConfiguration, WaterMeter, WaterMeterReading, WaterPurchaseBill, WaterSale } from "../types/domain";
 
@@ -32,6 +33,8 @@ export interface AppDataContextValue {
   payments: Payment[];
   provisionProperty: (propertyId: string, roomCount: number) => void;
   recordPayment: (payment: Payment, roomAfterPayment: Room, residencyAfterPayment?: TenantResidency) => Promise<void>;
+  saveTenantMoveIn: (residency: TenantResidency, roomAfterMoveIn: Room) => Promise<void>;
+  saveTenantMoveOut: (residencyAfterMoveOut: TenantResidency, roomAfterMoveOut: Room, paymentsAfterMoveOut: Payment[]) => Promise<void>;
   restoreCurrentPropertyData: (backup: unknown) => void;
   rooms: Room[];
   setElectricityBills: Dispatch<SetStateAction<ElectricityBill[]>>;
@@ -189,6 +192,26 @@ function LocalAppDataProvider({ children }: { children: ReactNode }) {
     return Promise.resolve();
   }, [propertyId]);
 
+  const saveTenantMoveIn = useCallback((residency: TenantResidency, roomAfterMoveIn: Room) => {
+    setDatabase((current) => updateLocalPropertyData(current, propertyId, (data) => ({
+      ...data,
+      rooms: data.rooms.map((room) => room.id === roomAfterMoveIn.id ? roomAfterMoveIn : room),
+      tenantResidencies: [residency, ...data.tenantResidencies.filter((item) => item.id !== residency.id)],
+    })));
+    return Promise.resolve();
+  }, [propertyId]);
+
+  const saveTenantMoveOut = useCallback((residencyAfterMoveOut: TenantResidency, roomAfterMoveOut: Room, paymentsAfterMoveOut: Payment[]) => {
+    const paymentsById = new Map(paymentsAfterMoveOut.map((payment) => [payment.id, payment]));
+    setDatabase((current) => updateLocalPropertyData(current, propertyId, (data) => ({
+      ...data,
+      payments: data.payments.map((payment) => paymentsById.get(payment.id) ?? payment),
+      rooms: data.rooms.map((room) => room.id === roomAfterMoveOut.id ? roomAfterMoveOut : room),
+      tenantResidencies: data.tenantResidencies.map((residency) => residency.id === residencyAfterMoveOut.id ? residencyAfterMoveOut : residency),
+    })));
+    return Promise.resolve();
+  }, [propertyId]);
+
   const clearCurrentPropertyData = useCallback(() => {
     setDatabase((current) => ({ ...current, properties: { ...current.properties, [propertyId]: emptyLocalPropertyData() } }));
   }, [propertyId]);
@@ -211,6 +234,8 @@ function LocalAppDataProvider({ children }: { children: ReactNode }) {
     payments: propertyData.payments,
     provisionProperty,
     recordPayment,
+    saveTenantMoveIn,
+    saveTenantMoveOut,
     restoreCurrentPropertyData,
     rooms: propertyData.rooms,
     setElectricityBills,
@@ -236,7 +261,7 @@ function LocalAppDataProvider({ children }: { children: ReactNode }) {
     waterMeters: propertyData.waterMeters,
     waterPurchaseBills: propertyData.waterPurchaseBills,
     waterSales: propertyData.waterSales,
-  }), [clearCurrentPropertyData, database.users, propertyData, provisionProperty, recordPayment, restoreCurrentPropertyData, setBillingResetHistory, setElectricityBills, setMaintenanceIssues, setPayments, setReadNotificationIds, setRooms, setTenantResidencies, setUsers, setWaterConfiguration, setWaterMeterReadings, setWaterMeters, setWaterPurchaseBills, setWaterSales, storageError]);
+  }), [clearCurrentPropertyData, database.users, propertyData, provisionProperty, recordPayment, restoreCurrentPropertyData, saveTenantMoveIn, saveTenantMoveOut, setBillingResetHistory, setElectricityBills, setMaintenanceIssues, setPayments, setReadNotificationIds, setRooms, setTenantResidencies, setUsers, setWaterConfiguration, setWaterMeterReadings, setWaterMeters, setWaterPurchaseBills, setWaterSales, storageError]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
@@ -357,6 +382,31 @@ function FirebaseAppDataProvider({ children }: { children: ReactNode }) {
     }));
   }, [propertyId]);
 
+  const saveTenantMoveIn = useCallback(async (residency: TenantResidency, roomAfterMoveIn: Room) => {
+    await tenantResidencyRepository.moveIn(propertyId, residency, roomAfterMoveIn);
+    setData((current) => ({
+      ...current,
+      rooms: current.rooms.map((room) => room.id === roomAfterMoveIn.id ? roomAfterMoveIn : room),
+      tenantResidencies: [residency, ...current.tenantResidencies.filter((item) => item.id !== residency.id)],
+    }));
+  }, [propertyId]);
+
+  const saveTenantMoveOut = useCallback(async (residencyAfterMoveOut: TenantResidency, roomAfterMoveOut: Room, paymentsAfterMoveOut: Payment[]) => {
+    const existingById = new Map(data.payments.map((payment) => [payment.id, payment]));
+    const changedPayments = paymentsAfterMoveOut.filter((payment) => {
+      const existing = existingById.get(payment.id);
+      return existing?.residency !== payment.residency || existing?.residencyId !== payment.residencyId;
+    });
+    await tenantResidencyRepository.moveOut(propertyId, residencyAfterMoveOut, roomAfterMoveOut, changedPayments);
+    const paymentsById = new Map(paymentsAfterMoveOut.map((payment) => [payment.id, payment]));
+    setData((current) => ({
+      ...current,
+      payments: current.payments.map((payment) => paymentsById.get(payment.id) ?? payment),
+      rooms: current.rooms.map((room) => room.id === roomAfterMoveOut.id ? roomAfterMoveOut : room),
+      tenantResidencies: current.tenantResidencies.map((residency) => residency.id === residencyAfterMoveOut.id ? residencyAfterMoveOut : residency),
+    }));
+  }, [data.payments, propertyId]);
+
   const value = useMemo<AppDataContextValue>(() => ({
     authenticatedUserId: authUser?.uid,
     billingResetHistory: data.billingResetHistory,
@@ -367,6 +417,8 @@ function FirebaseAppDataProvider({ children }: { children: ReactNode }) {
     payments: data.payments,
     provisionProperty: () => undefined,
     recordPayment,
+    saveTenantMoveIn,
+    saveTenantMoveOut,
     restoreCurrentPropertyData: () => setStorageError("Firebase restore is intentionally disabled. Backups will first be imported through the audited migration tool."),
     rooms: data.rooms,
     setElectricityBills: (update) => updateArray("electricityBills", update),
@@ -392,7 +444,7 @@ function FirebaseAppDataProvider({ children }: { children: ReactNode }) {
     waterMeters: data.waterMeters,
     waterPurchaseBills: data.waterPurchaseBills,
     waterSales: data.waterSales,
-  }), [authUser?.uid, data, isWaterConfigurationLoading, readNotificationIds, recordPayment, setReadNotificationIds, setUsers, setWaterConfiguration, storageError, updateArray, users]);
+  }), [authUser?.uid, data, isWaterConfigurationLoading, readNotificationIds, recordPayment, saveTenantMoveIn, saveTenantMoveOut, setReadNotificationIds, setUsers, setWaterConfiguration, storageError, updateArray, users]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

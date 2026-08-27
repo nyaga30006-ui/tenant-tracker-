@@ -6,8 +6,12 @@ export function roomElectricityFee(room: Room) {
   return room.electricityDueEnabled ? (room.electricityFee ?? DEFAULT_ELECTRICITY_FEE) : 0;
 }
 
+export function roomElectricityDue(room: Room) {
+  return Math.max(0, roomElectricityFee(room) - (room.electricityPaid ?? 0));
+}
+
 export function roomMonthlyCharge(room: Room) {
-  return room.rent + roomElectricityFee(room);
+  return room.rent;
 }
 
 export function roomDepositTarget(room: Room) {
@@ -31,15 +35,15 @@ export function roomRecurringBalance(room: Room) {
 
 export function roomBalance(room: Room) {
   if (!room.tenant) return 0;
-  if (room.bookBalanceDue !== undefined) return roomRecurringBalance(room);
-  return roomRecurringBalance(room) + roomDepositDue(room);
+  if (room.bookBalanceDue !== undefined) return roomRecurringBalance(room) + roomElectricityDue(room);
+  return roomRecurringBalance(room) + roomDepositDue(room) + roomElectricityDue(room);
 }
 
 export function calculatedRoomStatus(room: Room): RoomStatus {
   if (!room.tenant) return "vacant";
-  const balance = roomBalance(room);
-  if (balance < 0 || room.credit > 0) return "credit";
+  const balance = roomRecurringBalance(room);
+  if (balance < 0) return "credit";
   if (balance === 0) return "paid";
-  if (room.paid > 0) return "partial";
+  if (balance < room.rent) return "partial";
   return "unpaid";
 }

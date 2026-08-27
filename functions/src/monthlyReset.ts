@@ -27,8 +27,7 @@ function amount(value: unknown): number {
 }
 
 function monthlyCharge(room: ResettableRoom): number {
-  const electricity = room.electricityDueEnabled ? amount(room.electricityFee ?? 2500) : 0;
-  return Math.max(0, amount(room.rent) + electricity);
+  return Math.max(0, amount(room.rent));
 }
 
 function depositDue(room: ResettableRoom): number {
@@ -48,4 +47,3 @@ export function calculateMonthlyReset(room: ResettableRoom, month: string): { ar
   const status = credit > 0 ? "credit" : nextBalance === 0 ? "paid" : "unpaid";
   return { arrearsCarried: arrears, patch: { arrears, credit, lastResetMonth: month, paid: 0, status } };
 }
-

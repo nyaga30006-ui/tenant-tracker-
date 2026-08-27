@@ -19,6 +19,7 @@ export function createVacantRooms(value: number): Room[] {
     depositRequired: 0,
     electricityDueEnabled: false,
     electricityFee: 2500,
+    electricityPaid: 0,
     floor: 0,
     id: crypto.randomUUID(),
     number: `Room ${String(index + 1).padStart(numberWidth, "0")}`,
