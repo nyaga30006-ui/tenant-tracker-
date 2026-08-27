@@ -57,6 +57,31 @@ test("blocks import when receipts or non-empty payment references are duplicated
   assert.ok(bundle.report.errors.includes("Duplicate payment reference: ABC123"));
 });
 
+test("can preserve duplicate Version 1 receipts with deterministic migration suffixes", () => {
+  const bundle = transformV1Export({
+    settings: {propname: "Incorrect legacy name"},
+    rooms: [{id: "r1", number: "Room 01", tenant: "Alice", rent: 7500}],
+    payments: [
+      {id: "p1", roomId: "r1", tenant: "Alice", amount: 1000, receiptNo: "R-1", rawDate: "2026-08-01"},
+      {id: "p2", roomId: "r1", tenant: "Alice", amount: 2000, receiptNo: "R-1", rawDate: "2026-08-02"},
+    ],
+  }, {
+    address: "",
+    city: "",
+    duplicateReceiptStrategy: "suffix",
+    migrationDate: "2026-08-27",
+    propertyId: "nyaga-property",
+    propertyName: "Nyaga Property",
+  });
+
+  assert.equal(bundle.report.canImport, true);
+  assert.equal(bundle.property.name, "Nyaga Property");
+  assert.equal(bundle.collections.payments[0].receiptNo, "R-1");
+  assert.equal(bundle.collections.payments[1].receiptNo, "R-1-MIG2");
+  assert.equal(bundle.collections.payments[1].legacyReceiptNo, "R-1");
+  assert.ok(bundle.report.warnings.some((warning) => warning.includes("Duplicate Version 1 receipt R-1")));
+});
+
 test("blocks ambiguous Version 1 electricity balances and duplicate room numbers", () => {
   const bundle = transformV1Export({
     rooms: [

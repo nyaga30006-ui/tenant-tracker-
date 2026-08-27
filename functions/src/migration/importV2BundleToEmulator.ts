@@ -48,6 +48,20 @@ function documentData(value: Record<string, unknown>): DocumentData {
   return JSON.parse(JSON.stringify(data)) as DocumentData;
 }
 
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function assertSameDocument(actual: DocumentData | undefined, expected: DocumentData, label: string): void {
+  if (!actual) throw new Error(`Emulator verification failed: ${label} is missing.`);
+  if (canonicalJson(actual) !== canonicalJson(expected)) throw new Error(`Emulator verification failed: ${label} does not match the preview bundle.`);
+}
+
 async function assertTargetsAreEmpty(database: Firestore, propertyId: string, users: Record<string, unknown>[]): Promise<void> {
   const property = await database.collection("properties").doc(propertyId).get();
   if (property.exists) throw new Error(`Refusing import: properties/${propertyId} already exists in the emulator.`);
@@ -93,6 +107,36 @@ export async function importBundleToEmulator(bundle: V2MigrationBundle, database
   return writes.length;
 }
 
+export async function verifyBundleInEmulator(bundle: V2MigrationBundle, database: Firestore): Promise<number> {
+  const property = bundle.property as Record<string, unknown>;
+  const propertyId = documentId(property, "Property");
+  const propertyReference = database.collection("properties").doc(propertyId);
+  const propertySnapshot = await propertyReference.get();
+  assertSameDocument(propertySnapshot.data(), {...documentData(property), provisioningState: "migration-preview"}, `properties/${propertyId}`);
+
+  let verified = 1;
+  for (const [index, user] of (bundle.users as Record<string, unknown>[]).entries()) {
+    const userId = documentId(user, `User ${index + 1}`);
+    const snapshot = await database.collection("users").doc(userId).get();
+    assertSameDocument(snapshot.data(), documentData(user), `users/${userId}`);
+    verified += 1;
+  }
+  for (const [collectionName, documents] of Object.entries(bundle.collections)) {
+    const snapshot = await propertyReference.collection(collectionName).get();
+    if (snapshot.size !== documents.length) {
+      throw new Error(`Emulator verification failed: ${collectionName} contains ${snapshot.size} documents; expected ${documents.length}.`);
+    }
+    const actualById = new Map(snapshot.docs.map((item) => [item.id, item.data()]));
+    for (const [index, value] of documents.entries()) {
+      const item = value as Record<string, unknown>;
+      const itemId = documentId(item, `${collectionName} item ${index + 1}`);
+      assertSameDocument(actualById.get(itemId), documentData(item), `properties/${propertyId}/${collectionName}/${itemId}`);
+      verified += 1;
+    }
+  }
+  return verified;
+}
+
 async function runCli(args: string[]): Promise<number> {
   if (args.includes("--help") || args.includes("-h")) {
     process.stdout.write(`${HELP}\n`);
@@ -103,8 +147,11 @@ async function runCli(args: string[]): Promise<number> {
   assertEmulatorSafety(host, projectId);
   const bundle = migrationBundle(JSON.parse(await readFile(inputPath(args), "utf8")) as unknown);
   const app = getApps()[0] ?? initializeApp({projectId});
-  const count = await importBundleToEmulator(bundle, getFirestore(app));
-  process.stdout.write(`Imported ${count} documents into the ${projectId} Firestore emulator at ${host}.\n`);
+  const database = getFirestore(app);
+  const count = await importBundleToEmulator(bundle, database);
+  const verified = await verifyBundleInEmulator(bundle, database);
+  if (verified !== count) throw new Error(`Emulator verification failed: imported ${count} documents but verified ${verified}.`);
+  process.stdout.write(`Imported and verified ${count} documents in the ${projectId} Firestore emulator at ${host}.\n`);
   return 0;
 }
 

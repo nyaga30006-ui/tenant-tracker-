@@ -17,9 +17,11 @@ Usage:
     --output <v2-bundle.json> \\
     --property-id <property-id> \\
     --migration-date <YYYY-MM-DD> \\
+    [--property-name <property-name>] \\
     [--address <address>] [--city <city>] \\
     [--billing-reset-day <1-28>] \\
     [--preferred-payment-method <bank|cash|mpesa>] \\
+    [--duplicate-receipt-strategy <block|suffix>] \\
     [--report <reconciliation-report.json>]
 
 This command reads and writes local JSON files only. It never connects to Firebase.
@@ -65,15 +67,21 @@ function parseOptions(args: string[]): CliOptions {
   if (method !== undefined && method !== "bank" && method !== "cash" && method !== "mpesa") {
     throw new Error("--preferred-payment-method must be bank, cash, or mpesa.");
   }
+  const duplicateReceiptStrategy = values.get("--duplicate-receipt-strategy");
+  if (duplicateReceiptStrategy !== undefined && duplicateReceiptStrategy !== "block" && duplicateReceiptStrategy !== "suffix") {
+    throw new Error("--duplicate-receipt-strategy must be block or suffix.");
+  }
   return {
     address: values.get("--address") ?? "",
     billingResetDay,
     city: values.get("--city") ?? "",
+    duplicateReceiptStrategy,
     input,
     migrationDate,
     output,
     preferredPaymentMethod: method,
     propertyId,
+    propertyName: values.get("--property-name"),
     report: resolve(values.get("--report") ?? outputReportPath(output)),
   };
 }

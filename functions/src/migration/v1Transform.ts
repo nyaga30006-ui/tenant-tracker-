@@ -15,9 +15,11 @@ export interface V1TransformOptions {
   address: string;
   billingResetDay?: number;
   city: string;
+  duplicateReceiptStrategy?: "block" | "suffix";
   migrationDate: string;
   preferredPaymentMethod?: "bank" | "cash" | "mpesa";
   propertyId: string;
+  propertyName?: string;
 }
 
 export interface V2MigrationBundle {
@@ -216,7 +218,7 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
     };
   });
 
-  const payments = sourcePayments.map((sourcePayment, index) => {
+  const payments: UnknownRecord[] = sourcePayments.map((sourcePayment, index) => {
     const id = paymentIds[index];
     const roomId = text(sourcePayment.roomId);
     const sourceRoom = roomById.get(roomId);
@@ -250,7 +252,32 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
 
   const receiptDuplicates = duplicateValues(payments.map((payment) => text(payment.receiptNo)));
   const referenceDuplicates = duplicateValues(payments.map((payment) => normalisedReference(payment.reference)));
-  for (const receipt of receiptDuplicates) errors.push(`Duplicate receipt number: ${receipt}`);
+  if (options.duplicateReceiptStrategy === "suffix") {
+    const duplicateReceipts = new Set(receiptDuplicates);
+    const receiptOccurrences = new Map<string, number>();
+    const usedReceipts = new Set(payments.map((payment) => text(payment.receiptNo)).filter(Boolean));
+    for (const payment of payments) {
+      const originalReceipt = text(payment.receiptNo);
+      if (!duplicateReceipts.has(originalReceipt)) continue;
+      const occurrence = (receiptOccurrences.get(originalReceipt) ?? 0) + 1;
+      receiptOccurrences.set(originalReceipt, occurrence);
+      if (occurrence === 1) continue;
+      let suffix = occurrence;
+      let migratedReceipt = `${originalReceipt}-MIG${suffix}`;
+      while (usedReceipts.has(migratedReceipt)) {
+        suffix += 1;
+        migratedReceipt = `${originalReceipt}-MIG${suffix}`;
+      }
+      usedReceipts.add(migratedReceipt);
+      payment.legacyReceiptNo = originalReceipt;
+      payment.receiptNo = migratedReceipt;
+    }
+    for (const receipt of receiptDuplicates) {
+      warnings.push(`Duplicate Version 1 receipt ${receipt} was retained on its first payment; later occurrences were suffixed and preserve the original as legacyReceiptNo.`);
+    }
+  } else {
+    for (const receipt of receiptDuplicates) errors.push(`Duplicate receipt number: ${receipt}`);
+  }
   for (const reference of referenceDuplicates) errors.push(`Duplicate payment reference: ${reference}`);
   const reservedReferences = new Set<string>();
   const paymentReferences: UnknownRecord[] = [];
@@ -335,7 +362,7 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
       landlordId: text(landlord?.id),
       maintenanceUnits: maintenance.filter((item) => item.status !== "completed").length,
       monthlyRentTarget: rooms.filter((room) => text(room.tenant)).reduce((sum, room) => sum + numberValue(room.rent), 0),
-      name: text(settings.propname) || "Imported Property",
+      name: text(options.propertyName) || text(settings.propname) || "Imported Property",
       occupiedUnits,
       preferredPaymentMethod: options.preferredPaymentMethod ?? "bank",
       provisioningState: "migration-preview",

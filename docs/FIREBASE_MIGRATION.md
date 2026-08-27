@@ -174,11 +174,13 @@ npm --prefix functions run migration:transform -- `
   --input .\migration-private\v1-export.json `
   --output .\migration-private\v2-preview.json `
   --property-id nyaga-property `
+  --property-name "Nyaga Property" `
   --migration-date 2026-08-27 `
   --address "Property address" `
   --city "Kitengela" `
   --billing-reset-day 2 `
-  --preferred-payment-method bank
+  --preferred-payment-method bank `
+  --duplicate-receipt-strategy block
 ```
 
 The command writes a separate `v2-preview.report.json`. If validation finds a
@@ -186,6 +188,13 @@ duplicate room ID, payment ID, receipt number, or non-empty payment reference,
 it writes the report, exits with an error, and does not create the Version 2
 bundle. Keep real exports under `migration-private/`; that directory is ignored
 by Git and must never be committed.
+
+Keep the default duplicate-receipt strategy as `block` while investigating a
+collision. After confirming the records are separate genuine payments, the
+`suffix` strategy retains the first receipt, gives later occurrences a
+deterministic `-MIG2` suffix, and preserves each original value as
+`legacyReceiptNo`. `--property-name` explicitly corrects a stale Version 1
+property setting without changing the untouched source export.
 
 After the report passes, import the bundle only through `emulators:exec`:
 
@@ -198,4 +207,6 @@ node .\scripts\firebase-cli.mjs emulators:exec `
 
 The importer has three independent safety locks: it requires a local emulator
 host, requires a `demo-` project ID, and refuses to overwrite an existing
-property or user profile. It contains no production-import mode.
+property or user profile. After importing, it reads every property, user and
+subcollection document back from the emulator and compares the content with the
+preview bundle. It contains no production-import mode.

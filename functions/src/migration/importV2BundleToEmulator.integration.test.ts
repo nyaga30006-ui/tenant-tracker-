@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
-import {importBundleToEmulator} from "./importV2BundleToEmulator.js";
+import {importBundleToEmulator, verifyBundleInEmulator} from "./importV2BundleToEmulator.js";
 import {transformV1Export} from "./v1Transform.js";
 
 test("imports a reconciled V1 copy into an isolated V2 emulator property", async () => {
@@ -21,6 +21,7 @@ test("imports a reconciled V1 copy into an isolated V2 emulator property", async
 
   const count = await importBundleToEmulator(bundle, database);
   assert.ok(count >= 5);
+  assert.equal(await verifyBundleInEmulator(bundle, database), count);
   const [property, room, payment, user] = await Promise.all([
     database.collection("properties").doc("migration-test-property").get(),
     database.collection("properties").doc("migration-test-property").collection("rooms").doc("room-1").get(),
