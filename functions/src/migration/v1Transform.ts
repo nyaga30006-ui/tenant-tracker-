@@ -63,6 +63,16 @@ function numberValue(value: unknown): number {
 function dateValue(value: unknown, fallback: string): string {
   const candidate = text(value);
   if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) return candidate;
+  const dayFirst = candidate.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dayFirst) {
+    const [, day, month, year] = dayFirst;
+    const isoDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    const parsedDayFirst = new Date(`${isoDate}T00:00:00Z`);
+    if (!Number.isNaN(parsedDayFirst.getTime())
+      && parsedDayFirst.getUTCFullYear() === Number(year)
+      && parsedDayFirst.getUTCMonth() + 1 === Number(month)
+      && parsedDayFirst.getUTCDate() === Number(day)) return isoDate;
+  }
   const parsed = new Date(candidate);
   return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString().slice(0, 10);
 }

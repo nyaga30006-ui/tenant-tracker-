@@ -21,7 +21,7 @@ export function PremiumCollection() {
 
   return (
     <article className={`collect-card collection-card collection-card--${tone}`} id="dash-collect">
-      <div className="ring-wrap" aria-label={`${rate}% of ${month} rent collected`}>
+      <div className="ring-wrap" aria-label={`${rate}% monthly rent performance for ${month}`}>
         <svg aria-hidden="true" height="72" viewBox="0 0 72 72" width="72">
           <circle className="ring-bg" cx="36" cy="36" r="30" />
           <circle className={`ring-fill ring-fill--${tone}`} cx="36" cy="36" r="30" style={{ stroke: toneColor, strokeDasharray: circumference, strokeDashoffset }} />
@@ -30,7 +30,7 @@ export function PremiumCollection() {
       </div>
 
       <div className="collect-info">
-        <div className="collect-title">Collection Rate</div>
+        <div className="collect-title">Monthly Performance</div>
         <div className="collect-main" style={{ color: toneColor }}>{rate}% Collected</div>
         <div className="collect-sub">{formatCurrency(collected)} of {formatCurrency(expected)} due in {month}</div>
         <div className="collect-sub collect-sub--outstanding">{formatCurrency(pending)} outstanding</div>

@@ -12,7 +12,7 @@ export function LifetimeCollection() {
 
   return (
     <article className={`collect-card lifetime-collection-card lifetime-collection-card--${tone}`} id="dash-rent-performance">
-      <div className="ring-wrap" aria-label={`${rate}% all-time collection rate`}>
+      <div className="ring-wrap" aria-label={`${rate}% overall property collection rate including all debt`}>
         <svg aria-hidden="true" height="72" viewBox="0 0 72 72" width="72">
           <circle className="ring-bg" cx="36" cy="36" r="30" />
           <circle className={`ring-fill ring-fill--${tone}`} cx="36" cy="36" r="30" style={{ stroke: toneColor, strokeDasharray: circumference, strokeDashoffset }} />
@@ -21,10 +21,10 @@ export function LifetimeCollection() {
       </div>
 
       <div className="collect-info">
-        <div className="collect-title">All-Time Collection Rate</div>
-        <div className="collect-main" style={{ color: toneColor }}>{rate}% Performance</div>
+        <div className="collect-title">Collection Rate</div>
+        <div className="collect-main" style={{ color: toneColor }}>{rate}% Overall</div>
         <div className="collect-sub">{formatCurrency(collected)} collected from {formatCurrency(totalCharged)} charged · {paymentCount} confirmed payment{paymentCount === 1 ? "" : "s"}</div>
-        <div className="collect-sub">{formatCurrency(dueAndArrears)} due + arrears · {formatCurrency(credits)} active credits{depositAppliedToBalances > 0 ? ` · ${formatCurrency(depositAppliedToBalances)} deposit applied` : ""}</div>
+        <div className="collect-sub">All current and former debt: {formatCurrency(dueAndArrears)} · {formatCurrency(credits)} active credits{depositAppliedToBalances > 0 ? ` · ${formatCurrency(depositAppliedToBalances)} deposit applied` : ""}</div>
       </div>
     </article>
   );

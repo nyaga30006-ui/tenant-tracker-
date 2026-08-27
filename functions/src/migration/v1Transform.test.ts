@@ -82,6 +82,14 @@ test("can preserve duplicate Version 1 receipts with deterministic migration suf
   assert.ok(bundle.report.warnings.some((warning) => warning.includes("Duplicate Version 1 receipt R-1")));
 });
 
+test("parses Version 1 day-first reset dates without changing the month", () => {
+  const bundle = transformV1Export({
+    settings: {cycleHistory: [{monthKey: "2026-8", date: "12/08/2026", processed: 70, totalArrears: 40000}]},
+  }, {address: "", city: "", migrationDate: "2026-08-27", propertyId: "nyaga-property"});
+
+  assert.equal(bundle.collections.billingResets[0].resetAt, "2026-08-12");
+});
+
 test("blocks ambiguous Version 1 electricity balances and duplicate room numbers", () => {
   const bundle = transformV1Export({
     rooms: [
