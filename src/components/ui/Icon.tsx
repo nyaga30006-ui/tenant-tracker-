@@ -5,6 +5,7 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  ChartNoAxesCombined,
   Cable,
   Check,
   ChevronRight,
@@ -31,6 +32,8 @@ import {
   ShieldCheck,
   Smartphone,
   Sun,
+  TrendingDown,
+  TrendingUp,
   UserRound,
   UserMinus,
   UserPlus,
@@ -80,7 +83,10 @@ export type IconName =
   | "book"
   | "moveIn"
   | "moveOut"
-  | "warning";
+  | "warning"
+  | "chart"
+  | "trendDown"
+  | "trendUp";
 
 interface IconProps {
   name: IconName;
@@ -89,6 +95,7 @@ interface IconProps {
 
 const icons: Record<IconName, LucideIcon> = {
   warning: AlertTriangle,
+  chart: ChartNoAxesCombined,
   dashboard: LayoutDashboard,
   rooms: House,
   payments: CreditCard,
@@ -127,6 +134,8 @@ const icons: Record<IconName, LucideIcon> = {
   book: BookOpen,
   moveIn: UserPlus,
   moveOut: UserMinus,
+  trendDown: TrendingDown,
+  trendUp: TrendingUp,
 };
 
 export function Icon({ name, size = 18 }: IconProps) {

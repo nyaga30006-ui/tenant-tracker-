@@ -6,8 +6,8 @@ export function PremiumStats() {
   const { collected, occupiedCount, pending, rate, totalRooms, vacantCount } = useAppMetrics();
   const stats: Array<{ icon: IconName; label: string; value: string; note: React.ReactNode }> = [
     { icon: "rooms", label: "Total Rooms", value: String(totalRooms), note: <><b>{occupiedCount} occupied</b><span>·</span><em>{vacantCount} vacant</em></> },
-    { icon: "payments", label: "This Month Collected", value: formatCurrency(collected), note: <><b>Live room balances</b></> },
-    { icon: "bell", label: "This Month Pending", value: formatCurrency(pending), note: <><em>Current rent balance</em></> },
+    { icon: "payments", label: "This Month Collected", value: formatCurrency(collected), note: <><b>Confirmed rent payments</b></> },
+    { icon: "bell", label: "This Month Pending", value: formatCurrency(pending), note: <><em>Against expected rent</em></> },
     { icon: "dashboard", label: "Monthly Performance", value: `${rate}%`, note: <><b>{rate >= 80 ? "On track" : "Follow up balances"}</b></> },
   ];
 

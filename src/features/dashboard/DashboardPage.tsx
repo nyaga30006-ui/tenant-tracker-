@@ -6,6 +6,7 @@ import { OperationalOverview } from "./components/OperationalOverview";
 import { LifetimeCollection } from "./components/LifetimeCollection";
 import { CollectionAlerts } from "./components/CollectionAlerts";
 import { QuickActions } from "./components/QuickActions";
+import { DebtTrend } from "./components/DebtTrend";
 
 export function DashboardPage() {
   const today = new Intl.DateTimeFormat("en-KE", { day: "numeric", month: "long", year: "numeric" }).format(new Date());
@@ -27,6 +28,7 @@ export function DashboardPage() {
       </section>
 
       <PremiumStats />
+      <DebtTrend />
       <OperationalOverview />
       <LifetimeCollection />
     </section>

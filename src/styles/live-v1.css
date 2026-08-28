@@ -514,6 +514,82 @@ input[type="checkbox"], input[type="radio"] { width: 16px; height: 16px; min-hei
 #dash-collect .collect-sub--outstanding { color: var(--red); font-size: 16px; font-weight: 800; }
 #dash-rent-performance { border: 1.5px solid #2c5c8255; border-left: 5px solid var(--blue); background: linear-gradient(135deg, #2c5c8212, var(--surface)); padding: 18px; }
 
+/* ---------- Clean monthly performance ---------- */
+#dash-collect.monthly-performance-card {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) minmax(250px, .72fr);
+  gap: 18px;
+  border: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  padding: 18px 20px 15px;
+}
+#dash-collect.monthly-performance-card .ring-wrap,
+#dash-collect.monthly-performance-card .ring-wrap svg { width: 78px; height: 78px; }
+#dash-collect.monthly-performance-card .ring-bg,
+#dash-collect.monthly-performance-card .ring-fill { stroke-width: 6; }
+#dash-collect.monthly-performance-card .ring-pct { font-size: 17px; font-weight: 800; }
+#dash-collect.monthly-performance-card .collect-title { color: var(--text2); font-size: 10px; letter-spacing: 1px; }
+#dash-collect.monthly-performance-card .collect-main { color: var(--text); font-size: 24px; font-weight: 800; }
+#dash-collect.monthly-performance-card .collect-sub { color: var(--text2); font-size: 12px; }
+.monthly-performance-card__figures { display: grid; grid-template-columns: 1fr 1fr; align-self: stretch; gap: 0; margin: 0; border-left: 1px solid var(--border); }
+.monthly-performance-card__figures > div { display: flex; min-width: 0; flex-direction: column; justify-content: center; padding: 4px 0 4px 18px; }
+.monthly-performance-card__figures > div + div { border-left: 1px solid var(--border); }
+.monthly-performance-card__figures dt { color: var(--text2); font-size: 9px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; }
+.monthly-performance-card__figures dd { margin: 6px 0 0; color: var(--text); font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 700; }
+.monthly-performance-card__progress { grid-column: 1 / -1; overflow: hidden; height: 4px; border-radius: 999px; background: var(--surface2); }
+.monthly-performance-card__progress > span { display: block; height: 100%; border-radius: inherit; transition: width .8s ease; }
+
+/* ---------- Total rent debt trend ---------- */
+.debt-trend-card { overflow: hidden; margin-bottom: 14px; padding: 18px 20px; }
+.debt-trend-card__header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.debt-trend-card__title { display: flex; min-width: 0; align-items: center; gap: 11px; }
+.debt-trend-card__title > span { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 7px; background: var(--surface2); color: var(--accent); }
+.debt-trend-card__title small, .debt-trend-card__title h2 { display: block; }
+.debt-trend-card__title small { color: var(--text2); font-size: 9px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase; }
+.debt-trend-card__title h2 { margin: 2px 0 0; color: var(--text); font-size: 16px; }
+.debt-trend-card__signal { display: flex; align-items: center; gap: 6px; border: 1px solid currentColor; border-radius: 999px; padding: 6px 9px; font-size: 10px; }
+.debt-trend-card__signal strong { font-family: "IBM Plex Mono", monospace; }
+.debt-trend-card__signal--rising { background: #a23b2e0e; color: var(--red); }
+.debt-trend-card__signal--falling { background: #2f6b4f0e; color: var(--green); }
+.debt-trend-card__signal--flat { background: #2c5c820e; color: var(--blue); }
+.debt-trend-chart { margin-top: 14px; color: var(--blue); }
+.debt-trend-card--rising .debt-trend-chart { color: var(--red); }
+.debt-trend-card--falling .debt-trend-chart { color: var(--green); }
+.debt-trend-chart svg { display: block; width: 100%; height: 170px; overflow: visible; }
+.debt-trend-chart__grid line { stroke: var(--border); stroke-dasharray: 3 6; stroke-width: 1; }
+.debt-trend-chart__area { fill: currentColor; opacity: .09; }
+.debt-trend-chart__line { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; vector-effect: non-scaling-stroke; }
+.debt-trend-chart__point { fill: var(--surface); stroke: currentColor; stroke-width: 3; vector-effect: non-scaling-stroke; }
+.debt-trend-chart__labels { display: grid; gap: 5px; margin-top: -12px; color: var(--text2); font-size: 9px; text-align: center; }
+.debt-trend-chart__labels span:first-child { text-align: left; }
+.debt-trend-chart__labels span:last-child { color: var(--text); font-weight: 700; text-align: right; }
+.debt-trend-card__summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 13px; border-top: 1px solid var(--border); padding-top: 13px; }
+.debt-trend-card__summary > div { min-width: 0; }
+.debt-trend-card__summary > div + div { border-left: 1px solid var(--border); padding-left: 14px; }
+.debt-trend-card__summary span, .debt-trend-card__summary strong { display: block; }
+.debt-trend-card__summary span { color: var(--text2); font-size: 9px; letter-spacing: .6px; text-transform: uppercase; }
+.debt-trend-card__summary strong { margin-top: 4px; color: var(--text); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+.debt-trend-card__note { margin: 10px 0 0; color: var(--text2); font-size: 10px; }
+
+@media (max-width: 760px) {
+  #dash-collect.monthly-performance-card { grid-template-columns: 70px minmax(0, 1fr); gap: 14px; }
+  #dash-collect.monthly-performance-card .ring-wrap,
+  #dash-collect.monthly-performance-card .ring-wrap svg { width: 70px; height: 70px; }
+  .monthly-performance-card__figures { grid-column: 1 / -1; border-top: 1px solid var(--border); border-left: 0; padding-top: 11px; }
+  .monthly-performance-card__figures > div { padding: 2px 12px 2px 0; }
+  .monthly-performance-card__figures > div + div { padding-left: 12px; }
+  .debt-trend-card__header { align-items: flex-start; flex-direction: column; }
+  .debt-trend-chart svg { height: 145px; }
+}
+
+@media (max-width: 430px) {
+  .debt-trend-card { padding: 15px; }
+  .debt-trend-card__signal { width: 100%; justify-content: center; }
+  .debt-trend-card__summary { grid-template-columns: 1fr; }
+  .debt-trend-card__summary > div + div { border-top: 1px solid var(--border); border-left: 0; padding-top: 8px; padding-left: 0; }
+}
+
 .dashboard-collection-alerts, .unpaid-alert {
   margin-bottom: 14px;
   border: 1.5px solid #a23b2e55;
@@ -1508,6 +1584,7 @@ html[data-theme="dark"] .water-meter-ledger,
 html[data-theme="dark"] .water-customer-ledger { box-shadow: none; }
 html[data-theme="dark"] #dash-collect,
 html[data-theme="dark"] .premium-collection { border-color: #d2685a66; border-left-color: var(--red); background: linear-gradient(135deg, #a23b2e22, var(--surface)); }
+html[data-theme="dark"] #dash-collect.monthly-performance-card { border-color: var(--border); border-left-color: var(--border); background: var(--surface); }
 html[data-theme="dark"] #dash-rent-performance,
 html[data-theme="dark"] .lifetime-collection-card { border-color: #6fa0c966; border-left-color: var(--blue); background: linear-gradient(135deg, #2c5c8222, var(--surface)); }
 html[data-theme="dark"] .legacy-room-card--partial,
