@@ -89,7 +89,7 @@ export async function runBillingResetsForDate(billingDate: BillingDate): Promise
   return properties.size;
 }
 
-export const runScheduledBillingResets = onSchedule({
+export const runDailyBillingResets = onSchedule({
   maxInstances: 1,
   memory: "256MiB",
   region: SCHEDULER_REGION,
