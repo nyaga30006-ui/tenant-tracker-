@@ -9,7 +9,9 @@ export { manageTenantResidency } from "./tenantResidency.js";
 const firebaseProjectId = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT;
 initializeApp(firebaseProjectId ? { projectId: firebaseProjectId } : undefined);
 
-const REGION = "africa-south1";
+// Cloud Scheduler is not available in africa-south1. The daily reset runs in
+// europe-west1 and accesses the Africa-hosted Firestore database once per day.
+const SCHEDULER_REGION = "europe-west1";
 const TIME_ZONE = "Africa/Nairobi";
 const TRANSACTION_CONCURRENCY = 20;
 
@@ -90,7 +92,7 @@ export async function runBillingResetsForDate(billingDate: BillingDate): Promise
 export const runScheduledBillingResets = onSchedule({
   maxInstances: 1,
   memory: "256MiB",
-  region: REGION,
+  region: SCHEDULER_REGION,
   retryCount: 3,
   schedule: "10 0 * * *",
   timeZone: TIME_ZONE,
