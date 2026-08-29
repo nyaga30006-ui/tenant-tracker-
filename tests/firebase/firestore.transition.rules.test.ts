@@ -68,7 +68,10 @@ describe("temporary V1 to V2 transition rules", () => {
     const caretaker = environment.authenticatedContext("caretaker").firestore();
     await assertSucceeds(getDoc(doc(caretaker, "properties", "property-a")));
     await assertFails(getDoc(doc(caretaker, "properties", "property-b")));
-    await assertFails(updateDoc(doc(caretaker, "properties", "property-a", "rooms", "room-1"), {tenant: "Changed"}));
+    await assertSucceeds(updateDoc(doc(caretaker, "properties", "property-a", "rooms", "room-1"), {tenant: "Changed"}));
+    await assertSucceeds(setDoc(doc(caretaker, "properties", "property-a", "rooms", "room-2"), {number: "02", paid: 0, tenant: ""}));
+    await assertFails(updateDoc(doc(caretaker, "properties", "property-a", "rooms", "room-1"), {bookBalanceDue: 5000}));
+    await assertFails(setDoc(doc(caretaker, "properties", "property-b", "rooms", "room-2"), {number: "02", paid: 0, tenant: ""}));
     const admin = environment.authenticatedContext("admin").firestore();
     const properties = await assertSucceeds(getDocs(collection(admin, "properties")));
     expect(properties.size).toBe(2);

@@ -9,9 +9,9 @@ describe("user permissions", () => {
     expect(Object.entries(permissions).filter(([key]) => key !== "isReadOnly").every(([, value]) => value)).toBe(true);
   });
 
-  it("limits caretakers to operational recording without dashboard, rooms, users, or resets", () => {
+  it("gives caretakers full room operations except setting the book", () => {
     const permissions = permissionsFor(userFixture({ role: "caretaker" }));
-    expect(permissions).toMatchObject({ canRecordPayments: true, canManageResidencies: true, canManageWater: true, canManageRooms: false, canManageUsers: false, canResetMonths: false, canViewDashboard: false });
+    expect(permissions).toMatchObject({ canRecordPayments: true, canManageResidencies: true, canManageWater: true, canManageRooms: true, canSetBooks: false, canManageUsers: false, canResetMonths: false, canViewDashboard: false });
   });
 
   it("keeps view-only landlords read-only and grants approved full access", () => {

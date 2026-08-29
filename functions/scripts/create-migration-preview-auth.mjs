@@ -3,8 +3,23 @@ import {resolve} from "node:path";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 
-const EMAIL = "preview-admin@myproperty.test";
-const PASSWORD = "PreviewOnly123!";
+const ROLE_ACCOUNTS = {
+  admin: {
+    displayName: "Migration Preview Admin",
+    email: "preview-admin@myproperty.test",
+    password: "PreviewOnly123!",
+  },
+  caretaker: {
+    displayName: "Migration Preview Caretaker",
+    email: "preview-caretaker@myproperty.test",
+    password: "PreviewCare123!",
+  },
+  landlord: {
+    displayName: "Migration Preview Landlord",
+    email: "preview-landlord@myproperty.test",
+    password: "PreviewLand123!",
+  },
+};
 
 function localEmulator(host) {
   return /^(127\.0\.0\.1|localhost):\d+$/.test(host ?? "");
@@ -27,18 +42,33 @@ const bundle = JSON.parse(await readFile(inputPath(process.argv.slice(2)), "utf8
 if (bundle?.source !== "myproperty-v1" || bundle?.version !== 2 || bundle?.report?.canImport !== true) {
   throw new Error("The input is not a reconciled MyProperty Version 2 migration bundle.");
 }
-const admin = bundle.users?.find((user) => user?.role === "admin" && typeof user?.id === "string" && user.id);
-if (!admin) throw new Error("The migration bundle has no administrator profile.");
+const users = bundle.users?.filter((user) => ROLE_ACCOUNTS[user?.role] && typeof user?.id === "string" && user.id) ?? [];
+if (!users.some((user) => user.role === "admin")) throw new Error("The migration bundle has no administrator profile.");
 
 const authentication = getAuth(getApps()[0] ?? initializeApp({projectId}));
-const account = {displayName: "Migration Preview Admin", email: EMAIL, password: PASSWORD};
-try {
-  await authentication.createUser({uid: admin.id, ...account});
-} catch (error) {
-  if (error?.code !== "auth/uid-already-exists") throw error;
-  await authentication.updateUser(admin.id, account);
+const roleCounts = new Map();
+const createdAccounts = [];
+for (const user of users) {
+  const count = (roleCounts.get(user.role) ?? 0) + 1;
+  roleCounts.set(user.role, count);
+  const template = ROLE_ACCOUNTS[user.role];
+  const email = count === 1 ? template.email : template.email.replace("@", `-${count}@`);
+  const account = {
+    disabled: user.disabled === true,
+    displayName: count === 1 ? template.displayName : `${template.displayName} ${count}`,
+    email,
+    password: template.password,
+  };
+  try {
+    await authentication.createUser({uid: user.id, ...account});
+  } catch (error) {
+    if (error?.code !== "auth/uid-already-exists") throw error;
+    await authentication.updateUser(user.id, account);
+  }
+  createdAccounts.push({email, password: template.password, role: user.role});
 }
 
-console.log("Migration preview Auth account is ready in the local emulator.");
-console.log(`Email: ${EMAIL}`);
-console.log(`Password: ${PASSWORD}`);
+console.log("Migration preview Auth accounts are ready in the local emulator.");
+for (const account of createdAccounts) {
+  console.log(`${account.role}: ${account.email} / ${account.password}`);
+}

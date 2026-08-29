@@ -6,6 +6,7 @@ dist/
 output/
 .env
 .env.local
+.env.*.local
 migration-private/
 .firebase/
 *.log

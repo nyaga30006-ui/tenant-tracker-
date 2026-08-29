@@ -44,6 +44,22 @@ service cloud.firestore {
       return assignedTo(propertyId) && (admin() || fullLandlord());
     }
 
+    function caretakerCanCreateRoom(propertyId) {
+      return assignedTo(propertyId)
+        && caretaker()
+        && !request.resource.data.keys().hasAny([
+          'bookBalanceDue', 'bookNote', 'bookSetAt', 'bookSetBy'
+        ]);
+    }
+
+    function caretakerCanUpdateRoom(propertyId) {
+      return assignedTo(propertyId)
+        && caretaker()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'bookBalanceDue', 'bookNote', 'bookSetAt', 'bookSetBy'
+        ]);
+    }
+
     function validPayment(propertyId, paymentId) {
       return request.resource.data.amount is number
         && request.resource.data.amount > 0
@@ -81,13 +97,10 @@ service cloud.firestore {
 
       match /rooms/{roomId} {
         allow read: if assignedTo(propertyId);
-        allow create, delete: if canManageRooms(propertyId);
+        allow create: if canManageRooms(propertyId) || caretakerCanCreateRoom(propertyId);
+        allow delete: if canManageRooms(propertyId);
         allow update: if canManageRooms(propertyId)
-          || (assignedTo(propertyId)
-            && caretaker()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'paid', 'arrears', 'credit', 'status', 'depositPaid', 'electricityPaid', 'updatedAt'
-            ]));
+          || caretakerCanUpdateRoom(propertyId);
       }
 
       match /payments/{paymentId} {

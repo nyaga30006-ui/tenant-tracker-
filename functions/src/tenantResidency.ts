@@ -72,12 +72,11 @@ async function moveIn(propertyId: string, profile: AuthorisedProfile, payload: R
     if (existingResidency.exists) throw new HttpsError("already-exists", "This tenant residency already exists.");
     const currentRoom = roomSnapshot.data() ?? {};
     if (String(currentRoom.tenant ?? "").trim()) throw new HttpsError("failed-precondition", "The room is already occupied.");
-    const caretaker = profile.role === "caretaker";
-    const rent = caretaker ? amount(currentRoom.rent, "Existing monthly rent", 1) : amount(roomInput.rent, "Monthly rent", 1);
-    const depositRequired = caretaker ? amount(currentRoom.depositRequired ?? currentRoom.rent, "Existing deposit") : amount(roomInput.depositRequired, "Deposit required");
-    const depositHeld = caretaker ? 0 : amount(residencyInput.depositHeld, "Deposit held");
+    const rent = amount(roomInput.rent, "Monthly rent", 1);
+    const depositRequired = amount(roomInput.depositRequired, "Deposit required");
+    const depositHeld = amount(residencyInput.depositHeld, "Deposit held");
     if (depositHeld > depositRequired) throw new HttpsError("invalid-argument", "Deposit held cannot exceed the required deposit.");
-    const electricityDueEnabled = caretaker ? currentRoom.electricityDueEnabled === true : roomInput.electricityDueEnabled === true;
+    const electricityDueEnabled = roomInput.electricityDueEnabled === true;
     const resetDay = Number(propertySnapshot.data()?.billingResetDay) || 1;
     const moveInDay = Number(moveInDate.slice(8, 10));
 
@@ -139,18 +138,17 @@ async function moveOut(propertyId: string, profile: AuthorisedProfile, payload: 
     const currentResidency = residencySnapshot.data() ?? {};
     if (currentRoom.activeResidencyId !== residencyId || currentResidency.status !== "active") throw new HttpsError("failed-precondition", "This is no longer the room's active tenant.");
     if (moveOutDate < String(currentResidency.moveInDate ?? "")) throw new HttpsError("invalid-argument", "Move-out date cannot be before move-in date.");
-    const caretaker = profile.role === "caretaker";
     const depositHeld = Number(currentRoom.depositPaid ?? currentResidency.depositHeld) || 0;
     const balance = recurringBalance(currentRoom);
-    const depositAppliedToBalance = caretaker ? 0 : amount(residencyInput.depositAppliedToBalance, "Deposit applied to balance");
-    const depositDeducted = caretaker ? 0 : amount(residencyInput.depositDeducted, "Deposit deducted");
-    const depositRefunded = caretaker ? 0 : amount(residencyInput.depositRefunded, "Deposit refunded");
-    const finalBalance = caretaker ? balance : Number(residencyInput.finalBalance);
-    const deductionNote = caretaker ? "" : text(residencyInput.deductionNote, "Deduction explanation", false);
+    const depositAppliedToBalance = amount(residencyInput.depositAppliedToBalance, "Deposit applied to balance");
+    const depositDeducted = amount(residencyInput.depositDeducted, "Deposit deducted");
+    const depositRefunded = amount(residencyInput.depositRefunded, "Deposit refunded");
+    const finalBalance = Number(residencyInput.finalBalance);
+    const deductionNote = text(residencyInput.deductionNote, "Deduction explanation", false);
     const maximumBalanceApplication = Math.min(depositHeld, Math.max(0, balance));
     if (!Number.isFinite(finalBalance) || depositAppliedToBalance > maximumBalanceApplication || depositDeducted < depositAppliedToBalance || depositDeducted > depositHeld) throw new HttpsError("invalid-argument", "Deposit settlement is invalid.");
-    if (!caretaker && depositDeducted > 0 && !deductionNote) throw new HttpsError("invalid-argument", "Explain the deposit deduction.");
-    if (!caretaker && (Math.abs(depositRefunded - (depositHeld - depositDeducted)) > 0.01 || Math.abs(finalBalance - (balance - depositAppliedToBalance)) > 0.01)) throw new HttpsError("invalid-argument", "The deposit settlement totals do not match.");
+    if (depositDeducted > 0 && !deductionNote) throw new HttpsError("invalid-argument", "Explain the deposit deduction.");
+    if (Math.abs(depositRefunded - (depositHeld - depositDeducted)) > 0.01 || Math.abs(finalBalance - (balance - depositAppliedToBalance)) > 0.01) throw new HttpsError("invalid-argument", "The deposit settlement totals do not match.");
     const formerPayments = paymentSnapshots.docs.filter((payment) => {
       const value = payment.data();
       return value.residencyId === residencyId || (!value.residencyId && (value.residency ?? "current") === "current");
@@ -163,7 +161,7 @@ async function moveOut(propertyId: string, profile: AuthorisedProfile, payload: 
       depositDeducted,
       depositHeld,
       depositRefunded,
-      depositSettlementStatus: caretaker ? "pending" : "settled",
+      depositSettlementStatus: "settled",
       finalBalance,
       moveOutDate,
       moveOutNote: moveOutNote || FieldValue.delete(),

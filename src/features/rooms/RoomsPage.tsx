@@ -163,7 +163,7 @@ export function RoomsPage() {
       depositDeducted: draft.depositDeducted,
       depositHeld,
       depositRefunded: draft.depositRefunded,
-      depositSettlementStatus: currentUser.role === "caretaker" ? "pending" : "settled",
+      depositSettlementStatus: "settled",
       finalBalance: draft.finalBalance,
       moveOutDate: draft.moveOutDate,
       moveOutNote: draft.moveOutNote || undefined,
@@ -302,8 +302,8 @@ export function RoomsPage() {
       {historyRoom && <RoomHistoryDialog onClose={() => setHistoryRoomId(null)} payments={payments} residencies={tenantResidencies.filter((residency) => residency.roomId === historyRoom.id)} room={historyRoom} />}
       {paymentRoomId && permissions.canRecordPayments && <RecordPaymentDialog initialRoomId={paymentRoomId} onClose={() => setPaymentRoomId(null)} onSaved={savePayment} payments={payments} preferredMethod={selectedProperty.preferredPaymentMethod} recordedBy={currentUser.username} receiptPrefix={propertyReceiptPrefix(selectedProperty.name)} rooms={rooms} />}
       {setBookRoom && permissions.canSetBooks && currentUser.role === "admin" && <SetBookDialog onClose={() => setSetBookRoomId(null)} onSaved={setOpeningBook} room={setBookRoom} />}
-      {moveInRoom && permissions.canManageResidencies && !moveInRoom.tenant && <MoveInTenantDialog canSetFinancialTerms={currentUser.role !== "caretaker"} onClose={() => setMoveInRoomId(null)} onSaved={(draft) => void moveTenantIn(draft)} room={moveInRoom} />}
-      {moveOutRoom && permissions.canManageResidencies && moveOutRoom.tenant && <MoveOutTenantDialog canSettleDeposit={currentUser.role !== "caretaker"} onClose={() => setMoveOutRoomId(null)} onSaved={(draft) => void moveTenantOut(draft)} residency={moveOutResidency} room={moveOutRoom} />}
+      {moveInRoom && permissions.canManageResidencies && !moveInRoom.tenant && <MoveInTenantDialog canSetFinancialTerms={permissions.canManageRooms} onClose={() => setMoveInRoomId(null)} onSaved={(draft) => void moveTenantIn(draft)} room={moveInRoom} />}
+      {moveOutRoom && permissions.canManageResidencies && moveOutRoom.tenant && <MoveOutTenantDialog canSettleDeposit={permissions.canManageRooms} onClose={() => setMoveOutRoomId(null)} onSaved={(draft) => void moveTenantOut(draft)} residency={moveOutResidency} room={moveOutRoom} />}
       {toast && <div aria-live="polite" className="app-toast"><span><Icon name="check" size={16} /></span>{toast}</div>}
     </section>
   );

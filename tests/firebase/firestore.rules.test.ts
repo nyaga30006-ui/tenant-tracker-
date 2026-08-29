@@ -175,19 +175,26 @@ describe("Firestore property and role isolation", () => {
     await assertSucceeds(setDoc(doc(database, "users", "new-user"), { ...profiles.caretaker, email: "new@myproperty.test" }));
   });
 
-  test("caretaker is isolated to one property and only permitted room fields", async () => {
+  test("caretaker can manage assigned rooms but cannot set the opening book", async () => {
     const database = environment.authenticatedContext("caretaker").firestore();
     await assertSucceeds(getDoc(doc(database, "properties", "property-a")));
     await assertFails(getDoc(doc(database, "properties", "property-b")));
     await assertFails(getDocs(collection(database, "properties")));
     await assertSucceeds(updateDoc(doc(database, "properties", "property-a", "rooms", "room-01"), {
-      arrears: 0,
-      paid: 7500,
-      status: "paid",
+      depositRequired: 8000,
+      rent: 8000,
+      tenant: "Changed Tenant",
       updatedAt: "2026-08-22T09:00:00+03:00",
     }));
-    await assertFails(updateDoc(doc(database, "properties", "property-a", "rooms", "room-01"), { tenant: "Changed Tenant" }));
-    await assertFails(setDoc(doc(database, "properties", "property-a", "rooms", "room-02"), { ...room, number: "02" }));
+    await assertSucceeds(setDoc(doc(database, "properties", "property-a", "rooms", "room-02"), { ...room, number: "02" }));
+    await assertFails(updateDoc(doc(database, "properties", "property-a", "rooms", "room-01"), {
+      bookBalanceDue: 12000,
+      bookNote: "Opening balance",
+      bookSetAt: "2026-08-22T09:00:00+03:00",
+      bookSetBy: "Test Caretaker",
+    }));
+    await assertFails(setDoc(doc(database, "properties", "property-a", "rooms", "room-03"), { ...room, bookBalanceDue: 12000, number: "03" }));
+    await assertFails(setDoc(doc(database, "properties", "property-b", "rooms", "room-02"), { ...room, number: "02" }));
   });
 
   test("view landlord is read-only while full landlord can operate the assigned property", async () => {

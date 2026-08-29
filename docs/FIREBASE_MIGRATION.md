@@ -1,8 +1,11 @@
 # Version 1 to Version 2 Firebase migration
 
-Version 2 currently connects only to the local Firebase Emulator Suite. The
-live domain and live Firebase project must remain unchanged until a copied-data
-migration has passed reconciliation and the administrator approves cutover.
+Version 2 uses the local Firebase Emulator Suite for backend acceptance testing.
+An isolated `myproperty-v2-staging` project contains an empty Firestore database,
+strict Version 2 rules and Email/Password Authentication, but no migrated data or
+Cloud Functions. The live domain and live Firebase project must remain unchanged
+until copied-data migration has passed reconciliation and the administrator
+approves cutover.
 
 ## Confirmed Version 1 layout
 

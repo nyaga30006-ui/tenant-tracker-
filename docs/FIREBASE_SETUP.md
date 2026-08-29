@@ -55,6 +55,14 @@ The Emulator UI is at `http://127.0.0.1:4000/`. The seeded sign-ins are:
 These credentials exist only in the local Auth emulator. Restarting the
 emulators without an export removes them.
 
+For the reconciled Version 1 migration preview, use these local-only accounts:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | `preview-admin@myproperty.test` | `PreviewOnly123!` |
+| Caretaker | `preview-caretaker@myproperty.test` | `PreviewCare123!` |
+| Viewing landlord | `preview-landlord@myproperty.test` | `PreviewLand123!` |
+
 Run the automated Security Rules and scheduled-reset integration checks while
 the long-running emulators are stopped:
 
@@ -64,10 +72,19 @@ npm run firebase:test
 
 This command starts a clean demo emulator, runs the tests, and shuts it down.
 
-## First staging administrator
+## Current staging project
 
-In a future empty staging project, create the first administrator Auth account.
-Then create `users/{uid}` using that exact Auth uid:
+The isolated `myproperty-v2-staging` project now has an empty Firestore database
+in `africa-south1`, the strict Version 2 security rules and indexes, and
+Email/Password Authentication enabled. Cloud Functions are intentionally not
+deployed while the project remains on the no-cost Spark plan.
+
+`.env.staging.local` contains the public web-app configuration and is ignored by
+Git. Use `npm run build:staging` to verify it. Do not deploy the staging hosting
+target until the backend functions and acceptance data are ready.
+
+When Cloud Functions deployment is approved later, create the first staging
+administrator Auth account. Then create `users/{uid}` using that exact Auth uid:
 
 ```json
 {
@@ -84,10 +101,10 @@ Do not create this profile in the existing live project during emulator work.
 
 ## Staging before production
 
-Create or select a Firebase staging project that contains no live landlord data.
-Enable Email/Password Authentication and Firestore, then deploy the included
-rules and Functions to staging. Confirm the Firestore location before deploying
-the function region.
+Keep staging separate from the live project. The next paid-plan checkpoint is
+deploying the included Functions to staging. Until that is approved, exercise
+the same Functions locally with `npm run firebase:test` or the emulator workflow
+above.
 
 Only after the staging totals, permissions, reports, backups, and scheduled
 reset have been verified should the existing live project be considered. The
@@ -96,7 +113,9 @@ without overwriting the old collections.
 
 ## Current intentional limits
 
-- Local storage is still the normal development backend.
+- Local storage is still the normal development backend; Firebase mode defaults
+  to the isolated local emulators.
+- Staging Functions and Hosting are not deployed while staging remains on Spark.
 - Firebase property clearing and backup restore are disabled until audited admin
   workflows are added.
 - Creating Firebase Authentication users is disabled in the interface until the

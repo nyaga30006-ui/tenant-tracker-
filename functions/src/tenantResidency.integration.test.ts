@@ -4,7 +4,7 @@ import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
-test("caretaker can change occupancy without changing financial terms", async () => {
+test("caretaker can manage occupancy and financial terms", async () => {
   const projectId = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT ?? "demo-myproperty";
   const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9099";
   const firestoreHost = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
@@ -56,35 +56,36 @@ test("caretaker can change occupancy without changing financial terms", async ()
     assert.ok(token);
 
     async function call(data: Record<string, unknown>) {
-      const response = await fetch(`http://${functionsHost}/${projectId}/africa-south1/manageTenantResidency`, {
+      const endpoint = `http://${functionsHost}/${projectId}/africa-south1/manageTenantResidency`;
+      const response = await fetch(endpoint, {
         body: JSON.stringify({ data }),
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
         method: "POST",
       });
-      assert.equal(response.status, 200, await response.text());
+      assert.equal(response.status, 200, `${endpoint}: ${await response.text()}`);
     }
 
     await call({
       action: "moveIn",
       propertyId,
-      residency: { depositHeld: 7000, id: "residency-01", moveInDate: "2026-08-20", movedInBy: "Forged Name", roomId: "room-01", status: "active", tenantName: "Test Tenant" },
-      room: { electricityDueEnabled: true, id: "room-01", rent: 1, depositRequired: 0 },
+      residency: { depositHeld: 6000, id: "residency-01", moveInDate: "2026-08-20", movedInBy: "Forged Name", roomId: "room-01", status: "active", tenantName: "Test Tenant" },
+      room: { electricityDueEnabled: true, id: "room-01", rent: 8200, depositRequired: 9000 },
     });
     const [occupiedRoom, activeResidency] = await Promise.all([
       propertyReference.collection("rooms").doc("room-01").get(),
       propertyReference.collection("tenantResidencies").doc("residency-01").get(),
     ]);
     assert.equal(occupiedRoom.data()?.tenant, "Test Tenant");
-    assert.equal(occupiedRoom.data()?.rent, 7000);
-    assert.equal(occupiedRoom.data()?.depositRequired, 7000);
-    assert.equal(occupiedRoom.data()?.electricityDueEnabled, false);
-    assert.equal(activeResidency.data()?.depositHeld, 0);
+    assert.equal(occupiedRoom.data()?.rent, 8200);
+    assert.equal(occupiedRoom.data()?.depositRequired, 9000);
+    assert.equal(occupiedRoom.data()?.electricityDueEnabled, true);
+    assert.equal(activeResidency.data()?.depositHeld, 6000);
     assert.equal(activeResidency.data()?.movedInBy, "Workflow Caretaker");
 
     await call({
       action: "moveOut",
       propertyId,
-      residency: { deductionNote: "Forged deduction", depositAppliedToBalance: 7000, depositDeducted: 7000, depositRefunded: 7000, finalBalance: 0, id: "residency-01", moveOutDate: "2026-08-21" },
+      residency: { deductionNote: "Applied to outstanding rent", depositAppliedToBalance: 6000, depositDeducted: 6000, depositRefunded: 0, finalBalance: 2200, id: "residency-01", moveOutDate: "2026-08-21" },
       room: { id: "room-01" },
     });
     const [vacantRoom, formerResidency] = await Promise.all([
@@ -94,9 +95,11 @@ test("caretaker can change occupancy without changing financial terms", async ()
     assert.equal(vacantRoom.data()?.tenant, "");
     assert.equal(vacantRoom.data()?.status, "vacant");
     assert.equal(formerResidency.data()?.status, "former");
-    assert.equal(formerResidency.data()?.depositDeducted, 0);
+    assert.equal(formerResidency.data()?.depositAppliedToBalance, 6000);
+    assert.equal(formerResidency.data()?.depositDeducted, 6000);
     assert.equal(formerResidency.data()?.depositRefunded, 0);
-    assert.equal(formerResidency.data()?.depositSettlementStatus, "pending");
+    assert.equal(formerResidency.data()?.finalBalance, 2200);
+    assert.equal(formerResidency.data()?.depositSettlementStatus, "settled");
   } finally {
     await Promise.all([
       database.recursiveDelete(propertyReference),

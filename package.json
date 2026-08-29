@@ -9,15 +9,21 @@
   "scripts": {
     "dev": "vite",
     "dev:firebase": "vite --mode firebase-emulator",
+    "dev:staging": "vite --mode staging",
     "build": "tsc -b && vite build",
+    "build:staging": "tsc -b && vite build --mode staging",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "firebase:emulators": "node scripts/firebase-cli.mjs emulators:start --project demo-myproperty --only auth,firestore,functions,pubsub",
     "firebase:seed": "npm --prefix functions run seed:emulator",
-    "firebase:test": "node scripts/firebase-cli.mjs emulators:exec --project demo-myproperty --only auth,firestore,functions \"npm run firebase:test:inside\"",
+    "firebase:deploy:staging:auth": "node scripts/firebase-cli.mjs deploy --project myproperty-v2-staging --only auth",
+    "firebase:deploy:staging:rules": "node scripts/firebase-cli.mjs deploy --project myproperty-v2-staging --only firestore:rules,firestore:indexes",
+    "firebase:deploy:staging:functions": "node scripts/firebase-cli.mjs deploy --project myproperty-v2-staging --only functions",
+    "firebase:deploy:staging:hosting": "npm run build:staging && node scripts/firebase-cli.mjs deploy --project myproperty-v2-staging --only hosting",
+    "firebase:test": "npm --prefix functions run build && node scripts/firebase-cli.mjs emulators:exec --project demo-myproperty --only auth,firestore,functions \"npm run firebase:test:inside\"",
     "firebase:test:migration": "node scripts/firebase-cli.mjs emulators:exec --config firebase.migration-test.json --project demo-migration --only firestore \"npm --prefix functions run test:migration:emulator\"",
-    "firebase:test:inside": "npm run firebase:test:rules && npm --prefix functions run test:emulator",
+    "firebase:test:inside": "npm run firebase:test:rules && npm --prefix functions run test:emulator:built",
     "firebase:test:rules": "vitest run --config vitest.firebase.config.ts"
   },
   "dependencies": {
