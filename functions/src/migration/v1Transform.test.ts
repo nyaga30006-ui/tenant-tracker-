@@ -102,3 +102,22 @@ test("blocks ambiguous Version 1 electricity balances and duplicate room numbers
   assert.ok(bundle.report.errors.some((error) => error.startsWith("Duplicate room number:")));
   assert.ok(bundle.report.errors.some((error) => error.includes("no separate electricityPaid balance")));
 });
+
+test("applies an administrator-approved one-time electricity balance override", () => {
+  const bundle = transformV1Export({
+    rooms: [
+      {id: "r25", number: "Room 25", tenant: "New Tenant", rent: 5000, electricityDueEnabled: true, electricityFee: 2500},
+    ],
+  }, {
+    address: "",
+    city: "",
+    electricityPaidOverrides: {r25: 0},
+    migrationDate: "2026-08-29",
+    propertyId: "nyaga-property",
+  });
+
+  assert.equal(bundle.report.canImport, true);
+  assert.equal(bundle.collections.rooms[0].electricityFee, 2500);
+  assert.equal(bundle.collections.rooms[0].electricityPaid, 0);
+  assert.ok(bundle.report.warnings.some((warning) => warning.includes("administrator-approved migration override")));
+});

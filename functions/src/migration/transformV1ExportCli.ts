@@ -22,6 +22,7 @@ Usage:
     [--billing-reset-day <1-28>] \\
     [--preferred-payment-method <bank|cash|mpesa>] \\
     [--duplicate-receipt-strategy <block|suffix>] \\
+    [--electricity-paid-overrides <room-id=amount[,room-id=amount...]>] \\
     [--report <reconciliation-report.json>]
 
 This command reads and writes local JSON files only. It never connects to Firebase.
@@ -52,6 +53,21 @@ function requiredFlag(values: Map<string, string>, flag: string): string {
   return value;
 }
 
+function paidOverrides(value: string | undefined): Record<string, number> | undefined {
+  if (value === undefined) return undefined;
+  const overrides: Record<string, number> = {};
+  for (const entry of value.split(",")) {
+    const separator = entry.lastIndexOf("=");
+    const roomId = separator < 0 ? "" : entry.slice(0, separator).trim();
+    const amount = separator < 0 ? Number.NaN : Number(entry.slice(separator + 1).trim());
+    if (!roomId || !Number.isFinite(amount) || amount < 0) {
+      throw new Error("--electricity-paid-overrides must use room-id=amount entries with zero or positive amounts.");
+    }
+    overrides[roomId] = amount;
+  }
+  return overrides;
+}
+
 function parseOptions(args: string[]): CliOptions {
   const values = flagValues(args);
   const input = resolve(requiredFlag(values, "--input"));
@@ -76,6 +92,7 @@ function parseOptions(args: string[]): CliOptions {
     billingResetDay,
     city: values.get("--city") ?? "",
     duplicateReceiptStrategy,
+    electricityPaidOverrides: paidOverrides(values.get("--electricity-paid-overrides")),
     input,
     migrationDate,
     output,

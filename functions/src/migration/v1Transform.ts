@@ -16,6 +16,7 @@ export interface V1TransformOptions {
   billingResetDay?: number;
   city: string;
   duplicateReceiptStrategy?: "block" | "suffix";
+  electricityPaidOverrides?: Record<string, number>;
   migrationDate: string;
   preferredPaymentMethod?: "bank" | "cash" | "mpesa";
   propertyId: string;
@@ -150,6 +151,10 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
     errors.push(`Duplicate room number: ${roomNumber}`);
   }
   for (const id of duplicateValues(sourceUsers.map((user) => text(user.id)))) errors.push(`Duplicate user ID: ${id}`);
+  for (const [roomId, paid] of Object.entries(options.electricityPaidOverrides ?? {})) {
+    if (!roomIds.includes(roomId)) errors.push(`Electricity-paid override points to missing room ID: ${roomId}`);
+    if (!Number.isFinite(paid) || paid < 0) errors.push(`Electricity-paid override for ${roomId} must be zero or a positive amount.`);
+  }
   sourceUsers.forEach((user, index) => {
     if (!text(user.id)) errors.push(`User ${index + 1} has no Firebase Authentication UID.`);
   });
@@ -204,8 +209,15 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
     const tenantPayments = sourcePayments.filter((payment) => text(payment.roomId) === id && text(payment.tenant).toLowerCase() === tenant.toLowerCase());
     const activeResidencyId = residencyFor(id, tenant, true, tenantPayments, numberValue(sourceRoom.depositPaid));
     const electricityDueEnabled = sourceRoom.electricityDueEnabled === true;
-    if (tenant && electricityDueEnabled && sourceRoom.electricityPaid === undefined) {
+    const electricityFee = numberValue(sourceRoom.electricityFee) || 2500;
+    const electricityPaidOverride = options.electricityPaidOverrides?.[id];
+    const electricityPaid = electricityPaidOverride ?? numberValue(sourceRoom.electricityPaid);
+    if (tenant && electricityDueEnabled && sourceRoom.electricityPaid === undefined && electricityPaidOverride === undefined) {
       errors.push(`${text(sourceRoom.number) || id} has a Version 1 electricity charge but no separate electricityPaid balance; an administrator must allocate it before import.`);
+    }
+    if (electricityPaid > electricityFee) errors.push(`${text(sourceRoom.number) || id} has electricity paid above its one-time electricity fee.`);
+    if (electricityPaidOverride !== undefined) {
+      warnings.push(`${text(sourceRoom.number) || id} electricityPaid was set to KES ${electricityPaidOverride} from an administrator-approved migration override.`);
     }
     return {
       ...(activeResidencyId ? { activeResidencyId } : {}),
@@ -215,8 +227,8 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
       depositPaid: numberValue(sourceRoom.depositPaid),
       depositRequired: numberValue(sourceRoom.depositRequired),
       electricityDueEnabled,
-      electricityFee: numberValue(sourceRoom.electricityFee) || 2500,
-      electricityPaid: numberValue(sourceRoom.electricityPaid),
+      electricityFee,
+      electricityPaid,
       floor: numberValue(sourceRoom.floor),
       id,
       lastResetMonth: text(sourceRoom.lastResetMonth) || undefined,
@@ -358,7 +370,12 @@ export function transformV1Export(source: V1Export, options: V1TransformOptions)
   }), { arrears: 0, credit: 0, paid: 0, rent: 0 });
   if (residencyByKey.size) warnings.push("Imported residency dates are estimated where Version 1 had no explicit move-in or move-out date.");
   if (!sourceRooms.some((room) => room.depositPaid !== undefined || room.depositRequired !== undefined)) warnings.push("The backup has no separate deposit fields; deposit balances default to zero and require administrator review.");
-  if (!sourceRooms.some((room) => room.electricityPaid !== undefined)) warnings.push("The backup has no separate electricityPaid fields; electricity balances default to zero and require administrator review.");
+  if (!sourceRooms.some((room) => room.electricityPaid !== undefined)) {
+    const overrideCount = Object.keys(options.electricityPaidOverrides ?? {}).length;
+    warnings.push(overrideCount
+      ? `The backup has no separate electricityPaid fields; ${overrideCount} administrator-approved override(s) were applied and all other electricity balances default to zero.`
+      : "The backup has no separate electricityPaid fields; electricity balances default to zero and require administrator review.");
+  }
   if (!Array.isArray(root.electricityBills) && !Array.isArray(nested.electricityBills)) warnings.push("The backup did not include the electricityBills collection; export it separately before final migration.");
 
   return {
