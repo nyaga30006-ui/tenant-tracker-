@@ -192,7 +192,7 @@ async function moveOut(propertyId: string, profile: AuthorisedProfile, payload: 
   });
 }
 
-export const manageTenantResidency = onCall({ memory: "256MiB", region: "africa-south1" }, async (request) => {
+export const manageTenantResidency = onCall({ maxInstances: 1, memory: "256MiB", region: "africa-south1" }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Sign in before moving a tenant.");
   const payload = objectValue(request.data);
   const propertyId = text(payload.propertyId, "Property");

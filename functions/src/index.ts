@@ -88,6 +88,7 @@ export async function runBillingResetsForDate(billingDate: BillingDate): Promise
 }
 
 export const runScheduledBillingResets = onSchedule({
+  maxInstances: 1,
   memory: "256MiB",
   region: REGION,
   retryCount: 3,
