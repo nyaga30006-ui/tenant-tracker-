@@ -7,6 +7,7 @@ import { formatBillingResetDay, nextBillingResetDate, normaliseBillingResetDay }
 import { normalisePreferredPaymentMethod } from "../../lib/paymentPreferences";
 import { useAccess } from "../../app/AccessContext";
 import { useAppData } from "../../store/AppDataProvider";
+import { userAccountRepository, type CreatedPropertyUser } from "../../repositories/userAccountRepository";
 import type { BillingResetRecord, LandlordAccessMode, PaymentMethod } from "../../types/domain";
 import { roomRecurringDue } from "../rooms/roomFinance";
 import { resetRoomForMonth, roomsReadyForReset } from "../rooms/monthlyReset";
@@ -22,6 +23,7 @@ export function UsersPage() {
   const { currentUser, permissions } = useAccess();
   const { billingResetHistory, clearCurrentPropertyData, electricityBills, maintenanceIssues, payments, restoreCurrentPropertyData, rooms, setBillingResetHistory, setRooms, setUsers, storageMode, tenantResidencies, users, waterConfiguration, waterMeterReadings, waterMeters, waterPurchaseBills, waterSales } = useAppData();
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [createdUser, setCreatedUser] = useState<CreatedPropertyUser | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [propertyName, setPropertyName] = useState(selectedProperty.name);
@@ -56,10 +58,13 @@ export function UsersPage() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  function addUser(draft: UserDraft) {
+  async function addUser(draft: UserDraft) {
     if (!permissions.canManageUsers) return;
     if (storageMode === "firebase") {
-      setToast("Firebase users must be created by the secure administrator function, which is the next backend stage.");
+      const created = await userAccountRepository.create(draft);
+      setIsUserDialogOpen(false);
+      setCreatedUser(created);
+      setToast(`${draft.username}'s Firebase account was created.`);
       return;
     }
     if (!canAddUser(users) || (draft.role === "landlord" && !canAddLandlord(users))) {
@@ -180,7 +185,7 @@ export function UsersPage() {
       <header className="legacy-page-header"><div><h1>Settings</h1><p>{storageMode === "local" ? "Local test data is saved in this browser." : ""}</p></div><button className="legacy-primary-button legacy-primary-button--plain btn btn-ghost" disabled title="Password changes become available after Firebase Authentication is connected." type="button">Password requires Firebase</button></header>
 
       <section className="settings-section">
-        <header><div><span className="settings-icon"><Icon name="users" /></span><div><h2>Property Teams</h2><p>Create landlords and caretakers, then assign exactly which properties each person can access.</p></div></div><button className="legacy-primary-button btn btn-primary" disabled={storageMode === "firebase" || !canAddUser(users)} onClick={() => setIsUserDialogOpen(true)} title={storageMode === "firebase" ? "Secure Firebase account creation is added in the server-functions stage." : undefined} type="button"><Icon name="plus" />Add User</button></header>
+        <header><div><span className="settings-icon"><Icon name="users" /></span><div><h2>Property Teams</h2><p>Create landlords and caretakers, then assign exactly which properties each person can access.</p></div></div><button className="legacy-primary-button btn btn-primary" disabled={!canAddUser(users)} onClick={() => setIsUserDialogOpen(true)} type="button"><Icon name="plus" />Add User</button></header>
         <div className="landlord-capacity"><div><small>Landlord capacity</small><strong>{activeLandlords} of {MAX_LANDLORDS}</strong><span>{remainingLandlordSlots(users)} landlord slots available</span></div><div className="capacity-bar"><span style={{ width: `${activeLandlords / MAX_LANDLORDS * 100}%` }} /></div></div>
         <div className="settings-user-list">
           {users.map((user) => {
@@ -209,6 +214,7 @@ export function UsersPage() {
       </section>
 
       {isUserDialogOpen && <UserDialog onClose={() => setIsUserDialogOpen(false)} onSaved={addUser} />}
+      {createdUser && <Modal description="The account is ready. Send this private setup link only to the new user so they can choose their password." onClose={() => setCreatedUser(null)} title="Firebase account created"><div className="modal-form"><label className="field">Account email<input readOnly value={createdUser.email} /></label><label className="field">Private password setup link<textarea readOnly rows={5} value={createdUser.passwordSetupLink} /></label><p className="info-box">For security, this link is shown here only after account creation. Do not post it publicly.</p><footer className="modal-actions"><button className="button button--secondary btn btn-ghost" onClick={() => setCreatedUser(null)} type="button">Done</button><button className="button button--primary btn btn-primary" onClick={() => { void navigator.clipboard.writeText(createdUser.passwordSetupLink); setToast("Password setup link copied."); }} type="button">Copy setup link</button></footer></div></Modal>}
       {editingUser && <UserDialog onClose={() => setEditingUserId(null)} onSaved={editUserAccess} user={editingUser} />}
       {isResetOpen && <Modal description="This action carries unpaid recurring charges into arrears, applies any credit, and resets paid-this-month to zero. It cannot be run twice for the same room and month." onClose={() => setIsResetOpen(false)} title={`Reset ${selectedProperty.name}?`}><div className="monthly-reset-preview info-box two-grid"><div><small>Rooms processed</small><strong>{roomsToReset.length}</strong></div><div><small>Estimated arrears</small><strong>{formatKes(estimatedArrears)}</strong></div><p className="warning-box">Download a backup first if this is real operational data.</p></div><footer className="modal-actions"><button className="button button--secondary btn btn-ghost" onClick={() => setIsResetOpen(false)} type="button">Cancel</button><button className="button button--danger btn btn-danger" onClick={runManualReset} type="button">Confirm Monthly Reset</button></footer></Modal>}
       {toast && <div aria-live="polite" className="app-toast"><span><Icon name="check" size={16} /></span>{toast}</div>}

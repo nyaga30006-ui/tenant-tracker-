@@ -5,6 +5,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { calculateMonthlyReset, type ResettableRoom } from "./monthlyReset.js";
 
 export { manageTenantResidency } from "./tenantResidency.js";
+export { createPropertyUser } from "./userAccounts.js";
 
 const firebaseProjectId = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT;
 initializeApp(firebaseProjectId ? { projectId: firebaseProjectId } : undefined);
