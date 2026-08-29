@@ -2,6 +2,14 @@
 
 This folder contains the modular replacement for the original single-file app.
 
+## Required runtime
+
+Firebase Functions and the project Firebase commands are pinned to Node.js 22
+through `.node-version` and the package engine setting. On this Windows setup,
+the verified portable Node 22 runtime is stored in the ignored `.tools` folder;
+`scripts/firebase-cli.mjs` selects it automatically without replacing the
+computer's global Node installation.
+
 ## Start the app
 
 1. Open this folder in VS Code.

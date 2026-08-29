@@ -1,4 +1,5 @@
 node_modules/
+.tools/
 functions/lib/
 functions/node_modules/
 dist/
