@@ -13,6 +13,7 @@ import { roomRecurringDue } from "../rooms/roomFinance";
 import { resetRoomForMonth, roomsReadyForReset } from "../rooms/monthlyReset";
 import { UserDialog, type UserDraft } from "./UserDialog";
 import { canAddLandlord, canAddUser, MAX_LANDLORDS, remainingLandlordSlots, roleLabel } from "./userPolicy";
+import { DeviceNotificationTest } from "../notifications/DeviceNotificationTest";
 
 function currentMonthKey(): string {
   return new Date().toISOString().slice(0, 7);
@@ -201,6 +202,8 @@ export function UsersPage() {
           <dl className="settings-definition-list"><div><dt>Planned schedule</dt><dd>{formatBillingResetDay(selectedProperty.billingResetDay)} of every month</dd></div><div><dt>Next scheduled date</dt><dd>{formatDate(nextBillingResetDate(selectedProperty.billingResetDay).toISOString())}</dd></div><div><dt>Last completed reset</dt><dd>{latestReset ? formatDate(latestReset.resetAt) : "No local reset recorded"}</dd></div><div><dt>Ready this month</dt><dd>{roomsToReset.length} occupied rooms</dd></div></dl>
           <button className="legacy-action-button legacy-action-button--gold btn btn-orange btn-sm" disabled={storageMode === "firebase" || !roomsToReset.length} onClick={() => setIsResetOpen(true)} title={storageMode === "firebase" ? "Firebase resets are executed by the scheduled backend." : undefined} type="button">{storageMode === "firebase" ? "Scheduled Backend Reset" : roomsToReset.length ? "Run Manual Reset" : "Current Month Already Reset"}</button>
         </article>
+
+        <DeviceNotificationTest />
 
         <article className="settings-section settings-section--compact">
           <header><div><span className="settings-icon"><Icon name="settings" /></span><div><h2>Backups & Data</h2><p>Download and restore operational data.</p></div></div></header>

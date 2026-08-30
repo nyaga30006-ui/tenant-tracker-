@@ -1259,6 +1259,10 @@ select.legacy-filter-control, .filter-sel { padding-right: 32px; }
 .payment-confirmation__warnings p, .payment-confirmation__warnings ul { margin: 5px 0 0; }
 .payment-confirmation__notice { margin: 0; color: var(--text2); font-size: 10px; }
 .warning-box { border: 1px solid #a23b2e55; border-left: 3px solid var(--red); border-radius: 6px; background: #a23b2e10; color: var(--text2); padding: 12px; font-size: 12px; line-height: 1.55; }
+.device-notification-status { margin-bottom: 12px; }
+.device-notification-status strong { display: block; color: var(--accent); font-size: 12px; }
+.device-notification-status p { margin: 4px 0 0; color: var(--text2); font-size: 11px; line-height: 1.5; }
+.device-notification-result { margin: 10px 0 0; color: var(--green); font-size: 11px; font-weight: 600; line-height: 1.5; }
 .user-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border); padding: 10px 0; }
 .user-row:last-child { border-bottom: 0; }
 
