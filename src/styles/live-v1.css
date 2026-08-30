@@ -1417,6 +1417,28 @@ select.legacy-filter-control, .filter-sel { padding-right: 32px; }
     flex-direction: column;
   }
   .premium-property-list { flex: 1; max-height: min(300px, calc(100dvh - 190px)); }
+  .notification-panel {
+    position: fixed;
+    top: 58px;
+    right: 8px;
+    left: 8px;
+    display: flex;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 72px);
+    flex-direction: column;
+  }
+  .notification-list {
+    min-width: 0;
+    max-height: calc(100dvh - 176px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .notification-item { grid-template-columns: 8px minmax(0, 1fr) 16px; min-width: 0; }
+  .notification-item > div { min-width: 0; }
+  .notification-item strong,
+  .notification-item p,
+  .notification-item small { overflow-wrap: anywhere; }
   .premium-account-identity strong { max-width: 80px; }
   .live-user-chip { padding: 5px 8px; }
   .premium-mobile-nav {
