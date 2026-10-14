@@ -74,6 +74,7 @@ test("scheduled reset updates only due properties and remains idempotent", async
       status: partial.data()?.status,
     }, { arrears: 5000, credit: 0, lastResetMonth: "2026-09", paid: 0, status: "unpaid" });
     assert.equal(credit.data()?.credit, 1500);
+    assert.equal(credit.data()?.status, "partial");
     assert.equal(credit.data()?.lastResetMonth, "2026-09");
     assert.equal(vacant.data()?.lastResetMonth, undefined);
     assert.equal(untouched.data()?.lastResetMonth, undefined);
@@ -84,6 +85,16 @@ test("scheduled reset updates only due properties and remains idempotent", async
     await runBillingResetsForDate({ day: 10, month: "2026-09" });
     const repeatedReset = await dueProperty.collection("billingResets").doc("2026-09").get();
     assert.equal(repeatedReset.data()?.attempts, 1);
+
+    await runBillingResetsForDate({ day: 10, month: "2026-10" });
+    const creditAfterSecondMonth = await dueProperty.collection("rooms").doc("credit").get();
+    assert.deepEqual({
+      arrears: creditAfterSecondMonth.data()?.arrears,
+      credit: creditAfterSecondMonth.data()?.credit,
+      lastResetMonth: creditAfterSecondMonth.data()?.lastResetMonth,
+      paid: creditAfterSecondMonth.data()?.paid,
+      status: creditAfterSecondMonth.data()?.status,
+    }, { arrears: 6000, credit: 0, lastResetMonth: "2026-10", paid: 0, status: "unpaid" });
   } finally {
     await Promise.all([
       database.recursiveDelete(dueProperty),

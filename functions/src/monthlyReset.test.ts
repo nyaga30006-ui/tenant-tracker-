@@ -10,7 +10,23 @@ test("scheduled reset carries unpaid rent and is idempotent", () => {
 
 test("scheduled reset carries excess payment as credit", () => {
   const result = calculateMonthlyReset({ arrears: 0, credit: 0, paid: 9_000, rent: 7_500, tenant: "Tenant" }, "2026-08");
-  assert.deepEqual(result, { arrearsCarried: 0, patch: { arrears: 0, credit: 1_500, lastResetMonth: "2026-08", paid: 0, status: "credit" } });
+  assert.deepEqual(result, { arrearsCarried: 0, patch: { arrears: 0, credit: 1_500, lastResetMonth: "2026-08", paid: 0, status: "partial" } });
+});
+
+test("scheduled reset applies carried credit only once", () => {
+  const firstReset = calculateMonthlyReset({ arrears: 0, credit: 0, paid: 9_000, rent: 7_500, tenant: "Tenant" }, "2026-08");
+  assert.ok(firstReset);
+
+  const secondReset = calculateMonthlyReset({
+    arrears: firstReset.patch.arrears,
+    credit: firstReset.patch.credit,
+    lastResetMonth: firstReset.patch.lastResetMonth,
+    paid: 0,
+    rent: 7_500,
+    tenant: "Tenant",
+  }, "2026-09");
+
+  assert.deepEqual(secondReset, { arrearsCarried: 6_000, patch: { arrears: 6_000, credit: 0, lastResetMonth: "2026-09", paid: 0, status: "unpaid" } });
 });
 
 test("scheduled reset skips vacant rooms", () => {

@@ -4,7 +4,7 @@ import { formatDate, formatKes } from "../../lib/format";
 import { nextPaymentReceipt } from "../../lib/receiptNumbers";
 import { findDuplicatePaymentReference, validateDate } from "../../lib/validation";
 import type { Payment, PaymentMethod, PaymentType, Room, RoomStatus } from "../../types/domain";
-import { calculatedRoomStatus, roomDepositDue, roomElectricityDue, roomRecurringBalance, roomRecurringDue } from "../rooms/roomFinance";
+import { calculatedRoomStatus, roomDepositDue, roomElectricityDue, roomRecurringBalance } from "../rooms/roomFinance";
 
 export interface RecordedPaymentDraft {
   amount: number;
@@ -69,7 +69,7 @@ function suggestedAmount(room: Room | undefined, paymentType: PaymentType): stri
     ? roomDepositDue(room)
     : paymentType === "electricity"
       ? roomElectricityDue(room)
-      : Math.max(0, roomRecurringDue(room) - room.paid);
+      : Math.max(0, roomRecurringBalance(room));
   return balance > 0 ? String(balance) : "";
 }
 

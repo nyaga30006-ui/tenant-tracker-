@@ -24,13 +24,13 @@ export function roomDepositDue(room: Room) {
 
 export function roomRecurringDue(room: Room) {
   if (room.bookBalanceDue !== undefined) return Math.max(0, room.bookBalanceDue);
-  return Math.max(0, roomMonthlyCharge(room) + room.arrears - room.credit);
+  return Math.max(0, roomMonthlyCharge(room) + room.arrears);
 }
 
 export function roomRecurringBalance(room: Room) {
   if (!room.tenant) return 0;
   if (room.bookBalanceDue !== undefined) return room.bookBalanceDue - room.paid - room.credit;
-  return roomRecurringDue(room) - room.paid;
+  return roomRecurringDue(room) - room.credit - room.paid;
 }
 
 export function roomBalance(room: Room) {

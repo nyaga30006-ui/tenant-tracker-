@@ -17,6 +17,12 @@ describe("room balances and statuses", () => {
     expect(calculatedRoomStatus(roomFixture({ paid: 8000 }))).toBe("credit");
   });
 
+  it("applies a carried credit once when calculating the next rent balance", () => {
+    const room = roomFixture({ credit: 1500, paid: 0 });
+    expect(roomRecurringBalance(room)).toBe(6000);
+    expect(calculatedRoomStatus(room)).toBe("partial");
+  });
+
   it("uses the remaining rent balance to distinguish unpaid from part paid", () => {
     expect(calculatedRoomStatus(roomFixture({ arrears: 7500, paid: 1000 }))).toBe("unpaid");
     expect(calculatedRoomStatus(roomFixture({ arrears: 1000, paid: 1000 }))).toBe("unpaid");

@@ -8,10 +8,12 @@ describe("monthly resets", () => {
     expect(reset).toMatchObject({ arrears: 6000, credit: 0, lastResetMonth: "2026-08", paid: 0, status: "unpaid" });
   });
 
-  it("carries excess payment as credit and cannot reset twice", () => {
-    const reset = resetRoomForMonth(roomFixture({ paid: 8000 }), "2026-08");
-    expect(reset.credit).toBe(500);
-    expect(resetRoomForMonth(reset, "2026-08")).toEqual(reset);
+  it("carries excess payment as credit, applies it once, and cannot reset twice", () => {
+    const firstReset = resetRoomForMonth(roomFixture({ paid: 8000 }), "2026-08");
+    expect(firstReset).toMatchObject({ credit: 500, status: "partial" });
+    const secondReset = resetRoomForMonth(firstReset, "2026-09");
+    expect(secondReset).toMatchObject({ arrears: 7000, credit: 0, status: "unpaid" });
+    expect(resetRoomForMonth(firstReset, "2026-08")).toEqual(firstReset);
   });
 
   it("does not add the one-time electricity fee during a monthly reset", () => {

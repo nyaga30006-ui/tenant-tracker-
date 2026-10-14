@@ -1,15 +1,14 @@
 import type { Room } from "../../types/domain";
-import { calculatedRoomStatus, roomRecurringDue } from "./roomFinance";
+import { calculatedRoomStatus, roomRecurringBalance } from "./roomFinance";
 
 export function resetRoomForMonth(room: Room, month: string): Room {
   if (!room.tenant || room.lastResetMonth === month) return room;
-  const previousDue = roomRecurringDue(room);
-  const available = room.paid + room.credit;
+  const balanceBeforeReset = roomRecurringBalance(room);
   const next: Room = {
     ...room,
-    arrears: Math.max(0, previousDue - available),
+    arrears: Math.max(0, balanceBeforeReset),
     bookBalanceDue: undefined,
-    credit: Math.max(0, available - previousDue),
+    credit: Math.max(0, -balanceBeforeReset),
     lastResetMonth: month,
     paid: 0,
   };
